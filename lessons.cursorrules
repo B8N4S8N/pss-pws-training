@@ -15,3 +15,5 @@
 12. **Stripe Checkout must omit `payment_method_types`** so Klarna/Afterpay can appear via dynamic payment methods. Enable BNPL in the Stripe Dashboard, not in code.
 13. **Webhooks:** keep `/api/stripe/webhook` public in `proxy.ts`; verify with `STRIPE_WEBHOOK_SECRET`.
 14. Tuition unlocks enrollment — do not auto-enroll on sign-up alone (except admin grants / scholarships).
+15. **Curriculum CMS:** preserve chapter-aware modules (`Module -> Chapter -> Lesson`) while keeping flat lessons working for legacy seeds; staff editors should keep Cascade forest/copper/yellow neo-brutalist styling, not purple or cream/terracotta.
+16. **Curriculum CMS is chaptered now:** author/edit content as Course -> Module -> Chapter -> Lesson. Keep `module.lessons` as a derived flat compatibility field via `flattenModuleLessons()` until admin/learn/database flows fully use chapters.

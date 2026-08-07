@@ -3,12 +3,30 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PSS_COURSE, PWS_COURSE, AI_PERSONAS } from "../src/lib/curriculum/courses";
+import type { ChapterSeed, LessonSeed, ModuleSeed } from "../src/lib/curriculum/courses";
 // Seed runs via tsx from repo root; relative import to generated client is intentional.
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
 });
 const prisma = new PrismaClient({ adapter });
+
+type SeedLesson = LessonSeed & { referencesJson?: string };
+
+function moduleLessons(mod: ModuleSeed): { chapter?: ChapterSeed; lessons: SeedLesson[] }[] {
+  if (mod.chapters?.length) {
+    return mod.chapters.map((chapter) => ({
+      chapter,
+      lessons: (chapter.lessons || []) as SeedLesson[],
+    }));
+  }
+  return [{ lessons: (mod.lessons || []) as SeedLesson[] }];
+}
+
+function toJsonString(value: unknown) {
+  if (value == null || value === "") return null;
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
 
 async function seedCourse(courseData: typeof PSS_COURSE) {
   const course = await prisma.course.upsert({
@@ -60,38 +78,129 @@ async function seedCourse(courseData: typeof PSS_COURSE) {
       },
     });
 
-    for (const [lIndex, lesson] of mod.lessons.entries()) {
-      await prisma.lesson.upsert({
-        where: { moduleId_slug: { moduleId: moduleRow.id, slug: lesson.slug } },
-        update: {
+    let lessonOrderIndex = 1;
+    for (const [chapterIndex, group] of moduleLessons(mod).entries()) {
+      const chapterRow = group.chapter
+        ? await prisma.chapter.upsert({
+            where: {
+              moduleId_slug: { moduleId: moduleRow.id, slug: group.chapter.slug },
+            },
+            update: {
+              title: group.chapter.title,
+              description: group.chapter.description ?? null,
+              sortOrder: chapterIndex + 1,
+            },
+            create: {
+              moduleId: moduleRow.id,
+              slug: group.chapter.slug,
+              title: group.chapter.title,
+              description: group.chapter.description ?? null,
+              sortOrder: chapterIndex + 1,
+            },
+          })
+        : null;
+
+      for (const lesson of group.lessons) {
+        const lessonData = {
           title: lesson.title,
           type: lesson.type,
-          orderIndex: lIndex + 1,
+          orderIndex: lessonOrderIndex,
+          chapterId: chapterRow?.id ?? null,
           estimatedMinutes: lesson.estimatedMinutes,
           contentMd: lesson.contentMd,
+          videoUrl: lesson.videoUrl ?? null,
+          videoProvider: lesson.videoProvider ?? null,
+          referencesJson: toJsonString(lesson.referencesJson ?? lesson.references),
+          learningModes: toJsonString(lesson.learningModes),
+          isModuleQuiz: Boolean(lesson.isModuleQuiz),
+          storytellingHook: lesson.storytellingHook ?? null,
           interactivePayload: lesson.interactivePayload
             ? JSON.stringify(lesson.interactivePayload)
             : null,
           passScore: lesson.passScore ?? 80,
-        },
-        create: {
-          moduleId: moduleRow.id,
-          slug: lesson.slug,
-          title: lesson.title,
-          type: lesson.type,
-          orderIndex: lIndex + 1,
-          estimatedMinutes: lesson.estimatedMinutes,
-          contentMd: lesson.contentMd,
-          interactivePayload: lesson.interactivePayload
-            ? JSON.stringify(lesson.interactivePayload)
-            : null,
-          passScore: lesson.passScore ?? 80,
-        },
-      });
+        };
+
+        await prisma.lesson.upsert({
+          where: { moduleId_slug: { moduleId: moduleRow.id, slug: lesson.slug } },
+          update: lessonData,
+          create: {
+            moduleId: moduleRow.id,
+            slug: lesson.slug,
+            ...lessonData,
+          },
+        });
+        lessonOrderIndex += 1;
+      }
     }
   }
 
   return course;
+}
+
+async function seedCourseMaterials({
+  pssCourseId,
+  pwsCourseId,
+  createdById,
+}: {
+  pssCourseId: string;
+  pwsCourseId: string;
+  createdById: string;
+}) {
+  const pssIntroLesson = await prisma.lesson.findFirst({
+    where: { module: { courseId: pssCourseId, slug: "recovery-foundations" } },
+    orderBy: { orderIndex: "asc" },
+  });
+  const pwsLesson = await prisma.lesson.findFirst({
+    where: { module: { courseId: pwsCourseId } },
+    orderBy: { orderIndex: "asc" },
+  });
+
+  const materials = [
+    {
+      id: "seed-material-pss-oha-thw-rules",
+      courseId: pssCourseId,
+      lessonId: pssIntroLesson?.id,
+      title: "OHA THW training and certification rules",
+      description:
+        "Reference page for Oregon Traditional Health Worker training requirements.",
+      materialType: "link",
+      url: "https://secure.sos.state.or.us/oard/displayDivisionRules.action?selectedDivision=7798",
+      sortOrder: 1,
+      createdById,
+    },
+    {
+      id: "seed-material-pss-story-practice-handout",
+      courseId: pssCourseId,
+      lessonId: pssIntroLesson?.id,
+      title: "Strategic story sharing worksheet",
+      description:
+        "A printable planning handout for deciding what to share, why, and when.",
+      materialType: "handout",
+      url: "https://example.com/cascade/strategic-story-sharing.pdf",
+      sortOrder: 2,
+      createdById,
+    },
+    {
+      id: "seed-material-pws-wellness-planning",
+      courseId: pwsCourseId,
+      lessonId: pwsLesson?.id,
+      title: "Peer wellness planning slide deck",
+      description:
+        "Demo slide resource staff can replace with the current cohort deck.",
+      materialType: "slide",
+      url: "https://example.com/cascade/peer-wellness-planning-slides",
+      sortOrder: 1,
+      createdById,
+    },
+  ];
+
+  for (const material of materials) {
+    await prisma.courseMaterial.upsert({
+      where: { id: material.id },
+      update: material,
+      create: material,
+    });
+  }
 }
 
 async function main() {
@@ -136,6 +245,11 @@ async function main() {
 
   const pss = await seedCourse(PSS_COURSE);
   const pws = await seedCourse(PWS_COURSE);
+  await seedCourseMaterials({
+    pssCourseId: pss.id,
+    pwsCourseId: pws.id,
+    createdById: admin.id,
+  });
 
   for (const persona of AI_PERSONAS) {
     await prisma.aiPersona.upsert({

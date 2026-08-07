@@ -64,3 +64,14 @@ Never treat AI scores as sole completion authority — admin evaluation flow iss
 - Do not commit `.env` / `*.db`
 - Crisis simulations are fictional training content; UI should remind students to use real-world crisis protocols with actual peers
 - Production: add rate limits on AI routes, audit logs, encrypted backups
+
+## Chaptered curriculum CMS structure
+
+Curriculum content now lives in `src/lib/curriculum/` as typed seed data:
+
+- `types.ts` defines courses, modules, chapters, lessons, references, learning modes, and quizzes.
+- `pss.ts` and `pws.ts` are the chaptered OHA-aligned course sources. Each module has `chapters` as the preferred CMS structure.
+- `helpers.ts` provides lesson builders and `flattenModuleLessons()` so legacy seed/admin/learn code can still read `module.lessons`.
+- `courses.ts` re-exports `./index` for backward-compatible imports.
+
+Admin CMS work should treat `Course -> Module -> Chapter -> Lesson` as the canonical editing model. Keep `lessons` as a derived flat compatibility field until the database/UI fully supports chapters.
