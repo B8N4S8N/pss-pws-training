@@ -127,7 +127,8 @@ export async function requireUser(roles?: Role[]) {
 }
 
 /** @deprecated Clerk handles sessions — kept as no-op for gradual migration */
-export async function createSession(_user: SessionUser) {
+export async function createSession(_user?: SessionUser) {
+  void _user;
   return;
 }
 
@@ -136,11 +137,14 @@ export async function destroySession() {
   return;
 }
 
-export async function hashPassword(_password: string) {
+export async function hashPassword(password: string) {
+  void password;
   throw new Error("Password auth retired — use Clerk");
 }
 
-export async function verifyPassword(_password: string, _hash: string) {
+export async function verifyPassword(password: string, hash: string) {
+  void password;
+  void hash;
   return false;
 }
 
