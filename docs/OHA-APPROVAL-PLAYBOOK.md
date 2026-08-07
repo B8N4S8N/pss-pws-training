@@ -79,6 +79,22 @@ FAQ: if offering PSS **and** PWS, submit **separate applications and curricula**
 ### 7. Non-CBO organizations need a CBO partner letter
 If you are not a Community-Based Organization under OAR 950-060, you need a signed agreement / letter of support / MOU with a CBO.
 
+### 8. Records & certificate language (FAQ-mandated fields)
+Certificate of completion must include:
+- Participant name, date range, worker type/subtype, hours
+- Trainer signature (electronic OK)
+- Organization name + insignia (and partner orgs if any)
+- **OARs associated with Traditional Health Workers**
+- **“With lived experience”** for PSS/PWS
+- Whether oral health training was included
+
+Also maintain attendance, quizzes, evaluations, instructor roster, training dates, student feedback form, grievance/attendance policies, and a separate certificate of attendance/participation when full completion isn’t met.
+
+### 9. After approval: quarterly reports
+Approved programs submit the THW Training Quarterly Report.
+
+**OHA contacts:** submit to THW.Program@odhsoha.oregon.gov · application help (FAQ): Shaun Cook — shaun.f.cook@oha.oregon.gov
+
 ---
 
 ## Part B — Exact Oregon to-do list (checklist)
