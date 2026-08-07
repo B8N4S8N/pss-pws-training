@@ -12,7 +12,7 @@ export default async function CourseLearnPage({
 }) {
   const { courseSlug } = await params;
   const user = await requireUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const course = await prisma.course.findUnique({
     where: { slug: courseSlug },

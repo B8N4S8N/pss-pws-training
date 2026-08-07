@@ -9,7 +9,7 @@ export const metadata = { title: "Cohorts" };
 
 export default async function CohortsPage() {
   const user = await requireUser(["ADMIN", "INSTRUCTOR"]);
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const cohorts = await prisma.cohort.findMany({
     include: {

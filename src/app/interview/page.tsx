@@ -7,7 +7,7 @@ export const metadata = { title: "Mock Interview" };
 
 export default async function InterviewPage() {
   const user = await requireUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   return (
     <div className="min-h-screen">

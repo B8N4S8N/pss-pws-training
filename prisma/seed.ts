@@ -99,7 +99,7 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@cascadepeer.academy" },
-    update: {},
+    update: { role: "ADMIN", passwordHash },
     create: {
       email: "admin@cascadepeer.academy",
       name: "Academy Admin",
@@ -111,7 +111,7 @@ async function main() {
 
   const instructor = await prisma.user.upsert({
     where: { email: "instructor@cascadepeer.academy" },
-    update: {},
+    update: { role: "INSTRUCTOR", passwordHash },
     create: {
       email: "instructor@cascadepeer.academy",
       name: "Jordan Lee, CPSS",
@@ -124,7 +124,7 @@ async function main() {
 
   const student = await prisma.user.upsert({
     where: { email: "student@cascadepeer.academy" },
-    update: {},
+    update: { role: "STUDENT", passwordHash },
     create: {
       email: "student@cascadepeer.academy",
       name: "Taylor Nguyen",

@@ -15,7 +15,7 @@ export default async function StudentDetailPage({
 }) {
   const { id } = await params;
   const actor = await requireUser(["ADMIN", "INSTRUCTOR"]);
-  if (!actor) redirect("/login");
+  if (!actor) redirect("/sign-in");
 
   const student = await prisma.user.findUnique({
     where: { id },

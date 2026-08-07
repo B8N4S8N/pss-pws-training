@@ -8,7 +8,7 @@ export const metadata = { title: "Practice Lab" };
 
 export default async function PracticePage() {
   const user = await requireUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const personas = await prisma.aiPersona.findMany({
     where: { isActive: true },

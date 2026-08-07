@@ -16,10 +16,10 @@ export function SiteFooter() {
           <Link href="/programs" className="block opacity-80 hover:opacity-100">
             Programs
           </Link>
-          <Link href="/register" className="block opacity-80 hover:opacity-100">
+          <Link href="/enroll" className="block opacity-80 hover:opacity-100">
             Enroll
           </Link>
-          <Link href="/login" className="block opacity-80 hover:opacity-100">
+          <Link href="/sign-in" className="block opacity-80 hover:opacity-100">
             Student login
           </Link>
         </div>

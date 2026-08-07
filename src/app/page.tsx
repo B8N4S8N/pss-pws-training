@@ -41,7 +41,7 @@ export default function HomePage() {
                 size="lg"
                 className="bg-accent text-accent-foreground hover:bg-accent/90"
               >
-                <Link href="/register">Start enrollment</Link>
+                <Link href="/sign-up">Start enrollment</Link>
               </Button>
               <Button
                 asChild
@@ -78,7 +78,7 @@ export default function HomePage() {
                 with AI practice before you ever sit with a real peer.
               </p>
               <Button asChild className="mt-6" variant="outline">
-                <Link href="/register?course=oregon-pss-40">Enroll in PSS</Link>
+                <Link href="/enroll?course=oregon-pss-40">Enroll in PSS</Link>
               </Button>
             </div>
             <div className="rounded-2xl border border-primary/15 bg-white/70 p-8 shadow-sm backdrop-blur">
@@ -94,7 +94,7 @@ export default function HomePage() {
                 capstone practicum.
               </p>
               <Button asChild className="mt-6" variant="outline">
-                <Link href="/register?course=oregon-pws-80">Enroll in PWS</Link>
+                <Link href="/enroll?course=oregon-pws-80">Enroll in PWS</Link>
               </Button>
             </div>
           </div>

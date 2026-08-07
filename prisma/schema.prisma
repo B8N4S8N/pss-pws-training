@@ -59,10 +59,20 @@ enum AiSessionType {
   DOCUMENTATION_COACH
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
 model User {
   id            String   @id @default(cuid())
+  clerkId       String?  @unique
   email         String   @unique
-  passwordHash  String
+  /// Optional legacy/local hash — Clerk is the primary auth provider
+  passwordHash  String?
   name          String
   role          Role     @default(STUDENT)
   phone         String?
@@ -70,6 +80,7 @@ model User {
   peerIdentity  String?
   bio           String?
   avatarUrl     String?
+  stripeCustomerId String? @unique
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -84,9 +95,33 @@ model User {
   evaluations       CompetencyEvaluation[] @relation("StudentEvaluations")
   givenEvaluations  CompetencyEvaluation[] @relation("InstructorEvaluations")
   instructedCohorts Cohort[]               @relation("CohortInstructor")
+  payments          Payment[]
 
   @@index([role])
   @@index([email])
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  userId                String
+  courseId              String
+  deliveryMode          DeliveryMode  @default(AYOP)
+  amountCents           Int
+  currency              String        @default("usd")
+  status                PaymentStatus @default(PENDING)
+  stripeCheckoutSessionId String?     @unique
+  stripePaymentIntentId String?
+  stripeCustomerId      String?
+  paymentMethodTypes    String?
+  metadataJson          String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([courseId])
 }
 
 model Course {
@@ -109,6 +144,7 @@ model Course {
   modules     Module[]
   enrollments Enrollment[]
   cohorts     Cohort[]
+  payments    Payment[]
 
   @@index([type])
 }

@@ -29,7 +29,7 @@ export default function ProgramsPage() {
               Self-Care, Skills Lab.
             </p>
             <Button asChild className="mt-6">
-              <Link href="/register?course=oregon-pss-40">Enroll in PSS</Link>
+              <Link href="/enroll?course=oregon-pss-40">Enroll in PSS</Link>
             </Button>
           </article>
 
@@ -44,7 +44,7 @@ export default function ProgramsPage() {
               Teams, SDOH & Partnerships, Housing & Benefits Deep Dive, Capstone.
             </p>
             <Button asChild className="mt-6">
-              <Link href="/register?course=oregon-pws-80">Enroll in PWS</Link>
+              <Link href="/enroll?course=oregon-pws-80">Enroll in PWS</Link>
             </Button>
           </article>
         </div>

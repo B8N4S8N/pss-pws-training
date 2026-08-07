@@ -1,8 +1,10 @@
+import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
-import { Manrope, Syne } from "next/font/google";
-import { Geist_Mono } from "next/font/google";
+import { Manrope, Syne, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+import "@clerk/ui/themes/shadcn.css";
 
 const display = Syne({
   variable: "--font-display",
@@ -36,8 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        {children}
-        <Toaster richColors position="top-center" />
+        <ClerkProvider appearance={{ theme: shadcn }}>
+          {children}
+          <Toaster richColors position="top-center" />
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { logoutAction } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ export const metadata = { title: "Student Dashboard" };
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   if (user.role === "ADMIN" || user.role === "INSTRUCTOR") redirect("/admin");
 
   const enrollments = await prisma.enrollment.findMany({
@@ -26,6 +26,12 @@ export default async function DashboardPage() {
   const certificates = await prisma.certificate.findMany({
     where: { userId: user.id, revoked: false },
   });
+  const payments = await prisma.payment.findMany({
+    where: { userId: user.id },
+    include: { course: true },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
 
   return (
     <div className="min-h-screen">
@@ -37,18 +43,30 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="secondary" size="sm">
+              <Link href="/enroll">Enroll / pay</Link>
+            </Button>
+            <Button asChild variant="secondary" size="sm">
               <Link href="/practice">Practice Lab</Link>
             </Button>
-            <form action={logoutAction}>
-              <Button type="submit" variant="outline" size="sm" className="border-white/30 bg-transparent text-white hover:bg-white/10">
-                Sign out
-              </Button>
-            </form>
+            <UserButton />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+        {!enrollments.length && (
+          <section className="rounded-2xl border border-accent/30 bg-white/80 p-6">
+            <h2 className="font-display text-xl text-primary">Complete enrollment</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sign-in is done. Next, pay for PSS or PWS (card, or Klarna/Afterpay when
+              offered) to unlock your coursework.
+            </p>
+            <Button asChild className="mt-4 bg-accent text-accent-foreground">
+              <Link href="/enroll">Choose a program & pay</Link>
+            </Button>
+          </section>
+        )}
+
         <section className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-primary/10 bg-white/70 p-5">
             <p className="text-sm text-muted-foreground">Active enrollments</p>
@@ -92,7 +110,8 @@ export default async function DashboardPage() {
                   </div>
                   <Progress value={e.overallProgress} />
                   <p className="mt-2 text-sm text-muted-foreground">
-                    ~{e.hoursLogged.toFixed(1)} / {e.course.contactHours} contact hours logged
+                    ~{e.hoursLogged.toFixed(1)} / {e.course.contactHours} contact hours
+                    logged
                   </p>
                 </div>
                 {e.cohort && e.deliveryMode === "HYBRID" && (
@@ -101,7 +120,11 @@ export default async function DashboardPage() {
                     <ul className="mt-2 space-y-1">
                       {e.cohort.liveSessions.slice(0, 3).map((s) => (
                         <li key={s.id}>
-                          {s.title} — {s.startsAt.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })} PT
+                          {s.title} —{" "}
+                          {s.startsAt.toLocaleString("en-US", {
+                            timeZone: "America/Los_Angeles",
+                          })}{" "}
+                          PT
                         </li>
                       ))}
                     </ul>
@@ -109,32 +132,58 @@ export default async function DashboardPage() {
                 )}
               </div>
             ))}
-            {!enrollments.length && (
-              <p className="text-muted-foreground">
-                No enrollments yet. <Link href="/register" className="underline">Enroll</Link>
-              </p>
-            )}
           </div>
         </section>
 
+        {payments.length > 0 && (
+          <section>
+            <h2 className="font-display text-2xl text-primary">Payments</h2>
+            <ul className="mt-4 space-y-2 text-sm">
+              {payments.map((p) => (
+                <li key={p.id} className="rounded-xl border bg-white/70 px-4 py-3">
+                  {p.course.type} · ${(p.amountCents / 100).toFixed(2)} · {p.status}
+                  {p.paymentMethodTypes ? ` · ${p.paymentMethodTypes}` : ""}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="grid gap-4 md:grid-cols-3">
-          <Link href="/practice" className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent">
+          <Link
+            href="/practice"
+            className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent"
+          >
             <h3 className="font-display text-lg text-primary">AI Practice Lab</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Roleplay clients & scored feedback</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Roleplay clients & scored feedback
+            </p>
           </Link>
-          <Link href="/tutor" className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent">
+          <Link
+            href="/tutor"
+            className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent"
+          >
             <h3 className="font-display text-lg text-primary">AI Tutor</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Ask about any competency domain</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ask about any competency domain
+            </p>
           </Link>
-          <Link href="/interview" className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent">
+          <Link
+            href="/interview"
+            className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent"
+          >
             <h3 className="font-display text-lg text-primary">Mock Interview</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Technical peer hiring practice</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Technical peer hiring practice
+            </p>
           </Link>
         </section>
 
         {certificates.length > 0 && (
           <section>
-            <h2 className="font-display text-2xl text-primary">Certificates of completion</h2>
+            <h2 className="font-display text-2xl text-primary">
+              Certificates of completion
+            </h2>
             <ul className="mt-4 space-y-2">
               {certificates.map((c) => (
                 <li key={c.id} className="rounded-xl border bg-white/70 px-4 py-3 text-sm">

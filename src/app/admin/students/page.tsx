@@ -9,7 +9,7 @@ export const metadata = { title: "Students" };
 
 export default async function AdminStudentsPage() {
   const user = await requireUser(["ADMIN", "INSTRUCTOR"]);
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },

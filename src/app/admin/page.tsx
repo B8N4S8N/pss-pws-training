@@ -1,28 +1,36 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { UserButton } from "@clerk/nextjs";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { logoutAction } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Admin" };
 
 export default async function AdminPage() {
   const user = await requireUser(["ADMIN", "INSTRUCTOR"]);
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
-  const [students, enrollments, certificates, aiSessions, cohorts] =
+  const [students, enrollments, certificates, aiSessions, cohorts, payments] =
     await Promise.all([
       prisma.user.count({ where: { role: "STUDENT" } }),
       prisma.enrollment.count(),
       prisma.certificate.count(),
       prisma.aiSession.count(),
       prisma.cohort.count({ where: { isActive: true } }),
+      prisma.payment.count({ where: { status: "PAID" } }),
     ]);
 
   const recentEnrollments = await prisma.enrollment.findMany({
     take: 8,
     orderBy: { enrolledAt: "desc" },
+    include: { user: true, course: true },
+  });
+
+  const recentPayments = await prisma.payment.findMany({
+    take: 8,
+    orderBy: { createdAt: "desc" },
     include: { user: true, course: true },
   });
 
@@ -36,7 +44,7 @@ export default async function AdminPage() {
               {user.name} · {user.role}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button asChild size="sm" variant="secondary">
               <Link href="/admin/students">Students</Link>
             </Button>
@@ -46,21 +54,18 @@ export default async function AdminPage() {
             <Button asChild size="sm" variant="secondary">
               <Link href="/admin/curriculum">Curriculum</Link>
             </Button>
-            <form action={logoutAction}>
-              <Button type="submit" size="sm" variant="outline" className="border-white/30 text-white">
-                Sign out
-              </Button>
-            </form>
+            <UserButton />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-10 space-y-8">
         <h1 className="font-display text-3xl text-primary">Operations dashboard</h1>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
           {[
             ["Students", students],
             ["Enrollments", enrollments],
+            ["Paid checkouts", payments],
             ["Active cohorts", cohorts],
             ["Certificates", certificates],
             ["AI sessions", aiSessions],
@@ -102,6 +107,20 @@ export default async function AdminPage() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section className="rounded-2xl border bg-white/70 p-6">
+          <h2 className="font-display text-xl text-primary">Recent payments</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            {recentPayments.map((p) => (
+              <li key={p.id} className="border-t py-2">
+                {p.user.name} · {p.course.type} · ${(p.amountCents / 100).toFixed(2)} ·{" "}
+                {p.status}
+                {p.paymentMethodTypes ? ` · ${p.paymentMethodTypes}` : ""}
+              </li>
+            ))}
+            {!recentPayments.length && <li>No payments yet.</li>}
+          </ul>
         </section>
       </main>
     </div>

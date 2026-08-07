@@ -1,91 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { requireUser, createSession, destroySession, hashPassword, verifyPassword } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
-
-export async function loginAction(formData: FormData) {
-  const email = String(formData.get("email") || "")
-    .trim()
-    .toLowerCase();
-  const password = String(formData.get("password") || "");
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return { error: "Invalid email or password" };
-  }
-  await createSession({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  });
-  if (user.role === "ADMIN" || user.role === "INSTRUCTOR") {
-    redirect("/admin");
-  }
-  redirect("/dashboard");
-}
-
-export async function registerAction(formData: FormData) {
-  const email = String(formData.get("email") || "")
-    .trim()
-    .toLowerCase();
-  const name = String(formData.get("name") || "").trim();
-  const password = String(formData.get("password") || "");
-  const peerIdentity = String(formData.get("peerIdentity") || "").trim();
-  const courseSlug = String(formData.get("courseSlug") || "oregon-pss-40");
-  const deliveryMode = String(formData.get("deliveryMode") || "AYOP") as
-    | "AYOP"
-    | "HYBRID";
-
-  if (!email || !name || password.length < 8) {
-    return { error: "Name, email, and password (8+ chars) are required" };
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return { error: "An account with that email already exists" };
-
-  const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name,
-      passwordHash,
-      role: "STUDENT",
-      peerIdentity: peerIdentity || null,
-    },
-  });
-
-  const course = await prisma.course.findUnique({ where: { slug: courseSlug } });
-  if (course) {
-    const cohort = await prisma.cohort.findFirst({
-      where: { courseId: course.id, deliveryMode, isActive: true },
-    });
-    await prisma.enrollment.create({
-      data: {
-        userId: user.id,
-        courseId: course.id,
-        cohortId: cohort?.id,
-        deliveryMode,
-        status: "ACTIVE",
-      },
-    });
-  }
-
-  await createSession({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  });
-  redirect("/dashboard");
-}
-
-export async function logoutAction() {
-  await destroySession();
-  redirect("/");
-}
+import { appUrl, getStripe, stripeConfigured, CHECKOUT_INTEGRATION_ID } from "@/lib/stripe";
 
 export async function completeLessonAction(lessonId: string, score?: number) {
   const user = await requireUser(["STUDENT", "INSTRUCTOR", "ADMIN"]);
@@ -220,6 +140,120 @@ export async function submitScenarioAction(lessonId: string, choiceIndex: number
   return { score: choice.score, feedback: choice.feedback, passed };
 }
 
+export async function startCheckoutAction(formData: FormData) {
+  const user = await requireUser();
+  if (!user) redirect("/sign-in");
+
+  if (!stripeConfigured()) {
+    return {
+      error:
+        "Stripe is not configured yet. Add STRIPE_SECRET_KEY to enable card + Klarna/Afterpay checkout.",
+    };
+  }
+
+  const courseSlug = String(formData.get("courseSlug") || "oregon-pss-40");
+  const deliveryMode = String(formData.get("deliveryMode") || "AYOP") as
+    | "AYOP"
+    | "HYBRID";
+  const peerIdentity = String(formData.get("peerIdentity") || "").trim();
+
+  const course = await prisma.course.findUnique({ where: { slug: courseSlug } });
+  if (!course || !course.isPublished) {
+    return { error: "Course not found" };
+  }
+
+  if (peerIdentity) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { peerIdentity },
+    });
+  }
+
+  const existing = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId: user.id, courseId: course.id } },
+  });
+  if (existing && existing.status === "ACTIVE") {
+    redirect(`/learn/${course.slug}`);
+  }
+
+  const stripe = getStripe();
+
+  let customerId = user.stripeCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: user.email,
+      name: user.name,
+      metadata: { cascadeUserId: user.id },
+    });
+    customerId = customer.id;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { stripeCustomerId: customerId },
+    });
+  }
+
+  const payment = await prisma.payment.create({
+    data: {
+      userId: user.id,
+      courseId: course.id,
+      deliveryMode,
+      amountCents: course.priceCents,
+      currency: "usd",
+      status: "PENDING",
+      stripeCustomerId: customerId,
+    },
+  });
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: customerId,
+    client_reference_id: user.id,
+    success_url: appUrl(`/checkout/success?session_id={CHECKOUT_SESSION_ID}`),
+    cancel_url: appUrl(`/enroll?course=${course.slug}&canceled=1`),
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: course.priceCents,
+          product_data: {
+            name: course.title,
+            description: `${course.contactHours}-hour Oregon THW-aligned training · ${deliveryMode}`,
+          },
+        },
+      },
+    ],
+    metadata: {
+      cascadeUserId: user.id,
+      courseId: course.id,
+      courseSlug: course.slug,
+      deliveryMode,
+      paymentId: payment.id,
+      integration: CHECKOUT_INTEGRATION_ID,
+    },
+    payment_intent_data: {
+      metadata: {
+        cascadeUserId: user.id,
+        courseId: course.id,
+        paymentId: payment.id,
+      },
+    },
+    allow_promotion_codes: true,
+    billing_address_collection: "required",
+  });
+
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: { stripeCheckoutSessionId: session.id },
+  });
+
+  if (!session.url) {
+    return { error: "Stripe did not return a checkout URL" };
+  }
+
+  redirect(session.url);
+}
+
 export async function issueCertificateAction(studentId: string, courseType: "PSS" | "PWS") {
   const actor = await requireUser(["ADMIN", "INSTRUCTOR"]);
   if (!actor) return { error: "Unauthorized" };
@@ -315,6 +349,73 @@ export async function markAttendanceAction(formData: FormData): Promise<void> {
     },
   });
   revalidatePath("/admin");
+}
+
+export async function fulfillCheckoutSession(sessionId: string) {
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  if (session.payment_status !== "paid" && session.status !== "complete") {
+    return { error: "Payment not completed" };
+  }
+
+  const paymentId = session.metadata?.paymentId;
+  const courseId = session.metadata?.courseId;
+  const userId = session.metadata?.cascadeUserId;
+  const deliveryMode = (session.metadata?.deliveryMode || "AYOP") as
+    | "AYOP"
+    | "HYBRID";
+
+  if (!paymentId || !courseId || !userId) {
+    return { error: "Missing checkout metadata" };
+  }
+
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) return { error: "Payment record not found" };
+
+  if (payment.status !== "PAID") {
+    await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: "PAID",
+        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId:
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id || null,
+        paymentMethodTypes: (session.payment_method_types || []).join(","),
+        metadataJson: JSON.stringify({
+          amount_total: session.amount_total,
+          currency: session.currency,
+        }),
+      },
+    });
+  }
+
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course) return { error: "Course not found" };
+
+  const cohort = await prisma.cohort.findFirst({
+    where: { courseId, deliveryMode, isActive: true },
+  });
+
+  await prisma.enrollment.upsert({
+    where: { userId_courseId: { userId, courseId } },
+    update: {
+      status: "ACTIVE",
+      deliveryMode,
+      cohortId: cohort?.id,
+    },
+    create: {
+      userId,
+      courseId,
+      cohortId: cohort?.id,
+      deliveryMode,
+      status: "ACTIVE",
+    },
+  });
+
+  revalidatePath("/dashboard");
+  return { ok: true, courseSlug: course.slug };
 }
 
 async function refreshEnrollmentProgress(userId: string) {

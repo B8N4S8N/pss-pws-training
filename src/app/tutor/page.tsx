@@ -7,7 +7,7 @@ export const metadata = { title: "AI Tutor" };
 
 export default async function TutorPage() {
   const user = await requireUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   return (
     <div className="min-h-screen">

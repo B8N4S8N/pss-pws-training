@@ -7,7 +7,7 @@ export const metadata = { title: "Curriculum" };
 
 export default async function CurriculumAdminPage() {
   const user = await requireUser(["ADMIN", "INSTRUCTOR"]);
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const courses = await prisma.course.findMany({
     include: {

@@ -16,20 +16,25 @@ Oregon-focused **Peer Support Specialist (PSS, 40-hour)** and **Peer Wellness Sp
 ```bash
 npm install
 cp .env.example .env.local
-# set AUTH_SECRET to a long random string
+# Clerk keys: run `npx clerk@latest init` (or paste from Dashboard)
+# Stripe keys: from Dashboard (enable Klarna + Afterpay under Payment methods)
 npm run db:setup
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Demo accounts
+### Auth & payments
 
-| Role | Email | Password |
-|------|-------|----------|
-| Student | student@cascadepeer.academy | CascadeDemo2026! |
-| Instructor | instructor@cascadepeer.academy | CascadeDemo2026! |
-| Admin | admin@cascadepeer.academy | CascadeDemo2026! |
+- **Clerk** for sign-in / sign-up (Google, email, etc. per Dashboard)
+- **Stripe Checkout** for PSS/PWS tuition
+- **Klarna + Cash App Afterpay** appear automatically when enabled in Stripe (dynamic payment methods — see `docs/PAYMENTS-AND-AUTH.md`)
+
+Staff emails listed in `ADMIN_EMAILS` / `INSTRUCTOR_EMAILS` get elevated roles after first Clerk login.
+
+### Demo notes
+
+Previous password demo accounts are retired. Create a Clerk user, then complete `/enroll` checkout (or have an admin grant enrollment).
 
 ## AI features
 
