@@ -1,0 +1,17 @@
+# Lessons (Cascade Peer Academy)
+
+## Build lessons
+
+1. **Always read OHA/OAR sources before changing curriculum content.** Primary anchors: OAR 950-060-0140 curriculum standards and OHA THW training program approval pages. Do not invent legal requirements.
+2. **Prisma 7 + SQLite requires a driver adapter** (`@prisma/adapter-better-sqlite3`). Instantiating `PrismaClient` without an adapter fails.
+3. **AI Gateway may be missing in local/cloud agents.** Keep offline fallbacks in `src/lib/ai/peer-ai.ts` so demos never hard-crash.
+4. **Never let AI alone issue certificates.** Completion recommendation must remain a human instructor/admin action for OHA credibility.
+5. **create-next-app refused a non-empty directory** (even with only README). Scaffold in `/tmp` and copy, or clear conflicting files first.
+6. **Redirects in server actions throw** — don’t expect a return value after `redirect()`.
+7. **Crisis roleplay content is simulated.** Keep UI copy clear that real-world peers require real crisis protocols (988 / employer policy).
+8. **User rule: do not erase code casually.** Prefer modify-in-place; ask before large deletions.
+9. **Marketing UI:** brand-first hero (Cascade Peer Academy), forest/mist/copper palette — avoid purple gradients, cream+terracotta cliché, and Inter/Roboto defaults.
+11. **Auth is Clerk now** — do not reintroduce custom JWT login. Sync Prisma users via `clerkId`. Roles from env email allowlists or `publicMetadata.role`.
+12. **Stripe Checkout must omit `payment_method_types`** so Klarna/Afterpay can appear via dynamic payment methods. Enable BNPL in the Stripe Dashboard, not in code.
+13. **Webhooks:** keep `/api/stripe/webhook` public in `proxy.ts`; verify with `STRIPE_WEBHOOK_SECRET`.
+14. Tuition unlocks enrollment — do not auto-enroll on sign-up alone (except admin grants / scholarships).
