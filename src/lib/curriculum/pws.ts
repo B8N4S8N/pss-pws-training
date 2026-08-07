@@ -87,9 +87,18 @@ ${spec.core}
 
 PWS work builds on PSS foundations and asks for wider integration: whole health, addiction recovery, wellness planning, social determinants, group process, multidisciplinary teams, and advanced navigation. The tone remains peer-to-peer. The scope remains non-clinical. The responsibility grows because the settings are often more complex: primary care clinics, CCO-funded programs, residential and outpatient SUD services, housing partnerships, hospitals, peer-run programs, and community-based outreach.
 
+${callout(
+  "story",
+  `${spec.hook} In PWS settings, that moment often happens in a waiting room, a huddle, a group circle, or a housing lobby — not in a quiet therapy office.`
+)}
+
 ## Preserved and expanded content
 
 ${spec.preservedContent}
+
+## A field story frame
+
+Picture a peer who is managing chronic health needs, recovery goals, transportation gaps, and a care team that speaks in acronyms. Your job is not to become the care team. Your job is to help the person stay oriented to their own priorities while the system becomes more usable. That might look like preparing questions for a medical visit, co-building a WRAP section, practicing a harm-reduction plan, facilitating a group opening, or translating a benefits letter into plain language.
 
 ## Oregon practice lens
 
@@ -97,9 +106,21 @@ ${spec.oregonContext}
 
 The best PWS practice avoids two traps. The first trap is rescue: doing the work for the person until their own confidence shrinks. The second trap is professional mimicry: sounding like a junior clinician to gain credibility on a team. PWS credibility comes from lived experience, strong boundaries, accurate resource knowledge, and the ability to make systems more humane without pretending systems are simple.
 
+## Learning for every style
+
+- **Reading / reflective:** mark one sentence that would change how you speak in a multidisciplinary huddle.
+- **Visual / auditory:** map the peer, the system actors, and the decision points on one page.
+- **Kinesthetic:** rehearse a warm handoff and a boundary sentence aloud.
+- **Story:** notice when your lived experience opens trust and when it risks oversharing.
+
 ## Advanced practice moves
 
 ${bulletList(spec.advancedPractice)}
+
+${callout(
+  "practice",
+  "Write one sentence that starts, \"In this topic, my role is...\" and one that starts, \"In this topic, my role is not...\" Bring both to supervision."
+)}
 
 Pause at the end of this reading and write one sentence that starts, "In this topic, my role is..." and one sentence that starts, "In this topic, my role is not..." Those two sentences are a supervision tool.${deepDiveSection(
     "PWS anchors",

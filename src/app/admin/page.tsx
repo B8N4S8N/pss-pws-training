@@ -76,6 +76,17 @@ export default async function AdminPage() {
           ))}
         </div>
 
+        <section className="brutal-box-yellow p-6">
+          <h2 className="font-display text-2xl text-primary">Curriculum CMS</h2>
+          <p className="mt-2 max-w-3xl font-medium text-foreground/80">
+            Edit course modules, chapters, lessons, videos, references, quizzes, and
+            downloadable materials from the curriculum hub.
+          </p>
+          <Button asChild className="brutal-btn mt-4">
+            <Link href="/admin/curriculum">Open curriculum CMS</Link>
+          </Button>
+        </section>
+
         <section className="rounded-2xl border bg-white/70 p-6">
           <h2 className="font-display text-xl text-primary">Recent enrollments</h2>
           <div className="mt-4 overflow-x-auto">

@@ -168,6 +168,117 @@
   animation: soft-pulse 4s ease-in-out infinite;
 }
 
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  80% {
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35% {
+    transform: translateX(4px);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.28s ease-out both;
+}
+
+.animate-nudge {
+  animation: nudge 0.55s ease-in-out both;
+}
+
+.brutal-box {
+  border: 3px solid #143028;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #143028;
+}
+
+.brutal-box-accent {
+  border: 3px solid #143028;
+  background: #d97838;
+  box-shadow: 4px 4px 0 #143028;
+  color: #143028;
+}
+
+.brutal-box-yellow {
+  border: 3px solid #143028;
+  background: #f4e04d;
+  box-shadow: 4px 4px 0 #143028;
+  color: #143028;
+}
+
+.brutal-box-copper {
+  border: 3px solid #143028;
+  background: #c45c26;
+  box-shadow: 4px 4px 0 #143028;
+  color: #fff8f3;
+}
+
+.brutal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 3px solid #143028;
+  background: #f4e04d;
+  color: #143028;
+  box-shadow: 4px 4px 0 #143028;
+  font-weight: 800;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+.brutal-btn:hover {
+  background: #ffd166;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #143028;
+}
+
+.brutal-btn:active,
+.brutal-active:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #143028;
+}
+
+.lesson-callout {
+  border: 3px solid #143028;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #143028;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  font-weight: 600;
+}
+
+.lesson-callout-story {
+  background: #f4e04d;
+}
+
+.lesson-callout-practice {
+  background: #d7e8dc;
+}
+
+.lesson-callout-warn {
+  background: #f7b267;
+}
+
 .prose-lesson h1 {
   @apply text-3xl text-primary mb-4;
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
@@ -190,6 +301,20 @@
 }
 .prose-lesson strong {
   @apply font-semibold text-primary;
+}
+.prose-lesson a {
+  color: #0f3d2e;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.prose-lesson blockquote {
+  border-left: 6px solid #c45c26;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #143028;
+  margin: 1.25rem 0;
+  padding: 1rem;
 }
 .prose-lesson code {
   @apply rounded bg-muted px-1 py-0.5 text-sm;

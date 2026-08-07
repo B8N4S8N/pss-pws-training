@@ -86,9 +86,20 @@ ${spec.coreTruth}
 
 Here is the real talk for Oregon peer work: people do not need us to perform expertise at them. They need a steady relationship, transparent choices, and support that respects their definition of recovery. A Peer Support Specialist works from lived experience and a clear non-clinical scope. That means we can share story, model hope, help navigate systems, practice skills, and advocate with a person. It also means we do not diagnose, prescribe, coerce treatment, or turn our own recovery pathway into a rule for somebody else.
 
+${callout(
+  "story",
+  `${spec.hook} Hold that feeling while you read. The goal is not to become a perfect helper. The goal is to become a trustworthy peer who can stay curious under pressure.`
+)}
+
 ## Preserved course foundation
 
 ${spec.preservedContent}
+
+## A scene you might recognize
+
+Imagine sitting with someone who has already been through intake forms, waitlists, and well-meaning advice that missed the mark. They glance at your badge and wonder whether you are another professional who will talk *at* them. When you share that you know the system from the inside of recovery — carefully, with consent, and without turning your path into their prescription — the room often changes. That is the heart of this module: presence before performance.
+
+In ${spec.quizFocus}, the temptation is to rush toward the "right" answer. Resist that. Ask what the person wants from the conversation. Name what you can and cannot do. Offer options. Leave space for silence. Silence is not failure; sometimes it is the first honest moment of the day.
 
 ## Oregon practice lens
 
@@ -96,9 +107,29 @@ ${spec.oregonContext}
 
 Use the OHA Traditional Health Worker rules as your anchor and your employer's policy as your local operating manual. When there is tension between heart and role, slow down. Ask: "What is the peer asking for? What is within my scope? What protects dignity, choice, and safety?" That pause is not bureaucracy for its own sake; it is how we keep peer support from becoming another system that takes over.
 
+## Learning for every style
+
+- **Reading / reflective:** underline one sentence that challenges your habits and journal why.
+- **Visual / auditory:** sketch a three-box flowchart — peer ask → peer response → next shared step.
+- **Kinesthetic:** rehearse two sentences out loud: one that invites choice, one that names a boundary.
+- **Story:** notice where lived experience helps and where it risks centering you instead of the peer.
+
+## Common traps in this topic
+
+- Fixing too fast because discomfort is hard to sit with
+- Using jargon that makes Oregon systems feel even more closed
+- Treating cultural difference as a problem instead of a source of wisdom
+- Confusing "being available" with having no boundaries
+- Forgetting that AI practice is rehearsal — human instructors authorize completion
+
 ## What students should be able to do
 
 ${bullets(spec.keySkills)}
+
+${callout(
+  "practice",
+  "Before you leave this chapter, write one credibility sentence from lived experience and one restraint sentence about your role. Keep both visible during the scenario."
+)}
 
 Close this reading by naming one place where your lived experience gives you credibility and one place where your role requires restraint. Both are part of ethical peer practice.${deepDiveSection(
     "shared anchors",
@@ -113,11 +144,29 @@ Skill grows when we translate values into observable moves. In this module, your
 
 Start with consent. Ask before giving information, before sharing personal experience, before calling a provider, and before writing anything that is not routine. Then use plain language. Oregon systems can be full of acronyms: OHP, CCO, THW, CMHP, ROI, HIPAA. Translate without talking down. If the person looks confused, treat that as feedback about the system, not a failure in the person.
 
-Next, practice micro-skills:
+## Micro-skills for this module
 
 ${bullets(spec.keySkills)}
 
-When things get messy, do not rush to the most dramatic intervention. Notice what is urgent, what is important, and what belongs to someone else's professional scope. If safety is at risk, follow protocol. If dignity is at risk, repair. If the peer is asking you to rescue, return to partnership: "I can do this with you. I cannot do it for you in a way that takes your voice out of the process."
+## A short rehearsal script
+
+Try this cadence in your own words:
+
+1. **Open:** "Thanks for trusting me with this. What feels most important right now?"
+2. **Clarify role:** "I can walk beside you and help navigate. I cannot make clinical decisions or promise outcomes I do not control."
+3. **Offer choice:** "We could look at options together, practice one skill, or just talk through what happened. What would help?"
+4. **Close with agency:** "What do you want to try before we meet again, and how can I support that without taking over?"
+
+Adapt the words to culture, language access, disability access, and the person's energy. Scripts are training wheels, not handcuffs.
+
+## When the conversation gets messy
+
+Do not rush to the most dramatic intervention. Notice what is urgent, what is important, and what belongs to someone else's professional scope. If safety is at risk, follow protocol. If dignity is at risk, repair. If the peer is asking you to rescue, return to partnership: "I can do this with you. I cannot do it for you in a way that takes your voice out of the process."
+
+${callout(
+  "warn",
+  "If you notice yourself performing competence instead of practicing curiosity, pause. Name the pressure to yourself, then return to the peer's goals."
+)}
 
 ${callout(
   "practice",
@@ -143,6 +192,8 @@ Bring one quote or observation into the discussion board or live session.`;
 }
 
 function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
+  const skillA = spec.keySkills[0] ?? "Stay within peer scope";
+  const skillB = spec.keySkills[1] ?? "Center peer choice";
   return [
     {
       id: `${spec.slug}-q1`,
@@ -159,6 +210,18 @@ function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
     },
     {
       id: `${spec.slug}-q2`,
+      prompt: `In ${spec.shortTitle.toLowerCase()}, which action best matches: "${skillA}"?`,
+      options: [
+        "Do the task for the peer without asking so it gets done faster",
+        "Invite collaboration, name your role, and practice the skill with the peer's consent",
+        "Wait until a clinician takes over every decision",
+        "Share every detail of your own story before hearing theirs",
+      ],
+      correctIndex: 1,
+      explanation: `Module skill focus: ${skillA}. Peer support is collaborative, consent-based, and scope-aware.`,
+    },
+    {
+      id: `${spec.slug}-q3`,
       prompt: "When you are unsure about a boundary, safety, or legal issue, your next step should be to:",
       options: [
         "Handle it privately so the peer knows you are loyal",
@@ -171,7 +234,19 @@ function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
         "Consultation and policy protect the peer, the worker, and the integrity of peer-delivered services.",
     },
     {
-      id: `${spec.slug}-q3`,
+      id: `${spec.slug}-q4`,
+      prompt: `Which response best applies "${skillB}" in ${spec.quizFocus}?`,
+      options: [
+        "Push one preferred pathway because it worked for someone else",
+        "Slow down, check what matters to the peer, and co-create the next step",
+        "Escalate immediately for any discomfort",
+        "Avoid documenting anything related to the interaction",
+      ],
+      correctIndex: 1,
+      explanation: `Module skill focus: ${skillB}. Recovery-oriented practice follows the peer's meaningful next step.`,
+    },
+    {
+      id: `${spec.slug}-q5`,
       prompt: "Which response best reflects a recovery-oriented approach?",
       options: [
         "You need to follow the program exactly or you are not serious",
@@ -184,7 +259,7 @@ function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
         "Recovery-oriented support centers the person's goals, voice, and practical next steps.",
     },
     {
-      id: `${spec.slug}-q4`,
+      id: `${spec.slug}-q6`,
       prompt: "Why are Oregon OAR/OHA references included in this module?",
       options: [
         "They replace employer policy in every situation",
@@ -197,7 +272,7 @@ function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
         "OHA/OAR standards define training and certification context; workers still follow role, site, and supervisor guidance.",
     },
     {
-      id: `${spec.slug}-q5`,
+      id: `${spec.slug}-q7`,
       prompt: "A strong documentation or reflection after peer contact should:",
       options: [
         "Use respectful facts, peer voice, goals, and relevant next steps",
@@ -210,17 +285,17 @@ function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
         "Peer documentation should be factual, respectful, necessary, and connected to the peer's goals.",
     },
     {
-      id: `${spec.slug}-q6`,
-      prompt: "Which learning behavior will help you transfer this module into practice?",
+      id: `${spec.slug}-q8`,
+      prompt: `How should Cascade Peer Academy students treat AI practice for ${spec.shortTitle.toLowerCase()}?`,
       options: [
-        "Memorize scripts without adapting to culture or context",
-        "Practice, get feedback, reflect on power, and revise your language",
-        "Wait until employment to practice any skills",
-        "Use only your preferred communication style",
+        "As the final authority that replaces instructor evaluation",
+        "As a rehearsal space for feedback before human competency review",
+        "As optional entertainment with no learning value",
+        "As a substitute for crisis protocols and supervision",
       ],
       correctIndex: 1,
       explanation:
-        "Competence grows through practice, feedback, humility, and adaptation to the person and setting.",
+        "AI supports skill rehearsal; human instructors authorize completion and competency decisions.",
     },
   ];
 }

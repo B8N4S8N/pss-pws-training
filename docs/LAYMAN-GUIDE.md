@@ -38,3 +38,14 @@ Staff can see every student, quiz history, AI practice scores, mark attendance, 
 ## Demo login
 
 See the README for demo emails/passwords.
+
+## How staff edit curriculum
+
+In the admin area, open **Curriculum CMS**. Staff with Admin or Instructor access can:
+
+1. Pick a course and edit its modules.
+2. Open a module to add chapters, reorder lessons, or add a new lesson.
+3. Open a lesson editor to update reading content, video links, quiz/scenario JSON, learning-mode chips, story hooks, and reference links.
+4. Add course materials such as PDFs, slides, handouts, videos, or external links.
+
+Changes are saved immediately and refresh the student learning pages. Keep OHA references current and use the preview link on lesson editors before students rely on new content.
