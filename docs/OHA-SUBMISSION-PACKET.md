@@ -77,15 +77,17 @@ Each module lists OAR references, competencies, estimated hours, and lesson-leve
 
 | Method | Purpose |
 |--------|---------|
-| Module quizzes (pass typically ≥80%) | Knowledge mastery |
+| Section MCQs (pass typically ≥80%) | Quick must-know checks after each section (scope, safety, choice, confidentiality) |
+| Module AI Review (conversational, recorded) | Applied judgment in plain language; rubric on peer voice, consent, scope/safety, warmth without rescue |
 | Branching ethics/crisis scenarios | Applied judgment |
-| Reflections | Personal integration / lived experience ethics |
-| Documentation exercises | Recovery-oriented notes & plans |
-| AI roleplay portfolio with scored domains | High-volume interpersonal practice |
+| Reflections & documentation exercises | Personal integration / recovery-oriented notes |
+| AI Practice Lab roleplay portfolio | High-volume interpersonal practice |
 | Live observed roleplay / oral evaluation | Human validation of interpersonal competence |
 | Attendance records (Hybrid) | Contact-hour accountability |
 
-Written + oral + practical combination satisfies OAR expectations for evaluating knowledge and skill mastery.
+**Assessment spine:** Module → Sections → section MCQ → AI module review → human competency gate.
+
+Written + oral + practical combination satisfies OAR expectations for evaluating knowledge and skill mastery. AI reviews are practice evidence for instructors; humans authorize certificates of completion.
 
 ## 6. Attendance & participation policies
 

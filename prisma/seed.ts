@@ -205,6 +205,9 @@ async function seedCourseMaterials({
 }
 
 async function main() {
+  // Remove accidental short-slug course drafts from earlier hybrid WIP seeds
+  await prisma.course.deleteMany({ where: { slug: { in: ["pss", "pws"] } } });
+
   const passwordHash = await bcrypt.hash("CascadeDemo2026!", 10);
 
   const admin = await prisma.user.upsert({

@@ -1731,14 +1731,14 @@ const pssModuleSpecs: HybridModuleSpec[] = [
 export const CORE_PSS_MODULES = pssModuleSpecs.map(buildHybridModule);
 
 export const PSS_COURSE: CourseSeed = {
-  slug: "pss",
+  slug: "oregon-pss-40",
   type: "PSS",
-  title: "Peer Support Specialist Certification Training",
-  subtitle: "40-hour Oregon-aligned PSS training with section checks and module AI review",
+  title: "Peer Support Specialist (PSS) — 40-Hour Academy",
+  subtitle: "OHA-aligned · section checks · AI module reviews · human competency gate",
   description:
-    "A warm, practical 40-hour Peer Support Specialist curriculum for people with lived experience who want to support others with hope, scope clarity, and real-world skills.",
+    "A warm, practical 40-hour Peer Support Specialist curriculum for people with lived experience. Plain-language sections, short quizzes after each section, conversational AI review at the end of every module, and a human instructor for final sign-off.",
   contactHours: 40,
-  priceCents: 120000,
+  priceCents: 89500,
   competencies: [
     "Recovery-oriented peer support",
     "Communication and motivational interviewing",

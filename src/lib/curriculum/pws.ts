@@ -1593,14 +1593,14 @@ export const PWS_EXTRA_MODULES = pwsExtraSpecs.map(buildHybridModule);
 const PWS_PSS_MODULES = CORE_PSS_MODULES.map(cloneHybridModule);
 
 export const PWS_COURSE: CourseSeed = {
-  slug: "pws",
+  slug: "oregon-pws-80",
   type: "PWS",
-  title: "Peer Wellness Specialist Certification Training",
-  subtitle: "80-hour Oregon-aligned PWS training with PSS foundations, section checks, and module AI review",
+  title: "Peer Wellness Specialist (PWS) — 80-Hour Academy",
+  subtitle: "OHA-aligned · PSS core + PWS depth · section checks · AI module reviews",
   description:
-    "A practical 80-hour Peer Wellness Specialist curriculum that includes all PSS foundations plus whole-health, addiction recovery, group, systems, housing, and capstone practice.",
+    "A practical 80-hour Peer Wellness Specialist curriculum that includes all PSS foundations plus wellness planning, addiction/harm reduction, groups, whole health, teams, housing, and a capstone — taught in plain language with AI module reviews and human instructor evaluation.",
   contactHours: 80,
-  priceCents: 180000,
+  priceCents: 149500,
   competencies: [
     "All Peer Support Specialist competencies",
     "Wellness planning and WRAP-informed support",
