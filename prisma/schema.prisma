@@ -59,6 +59,15 @@ enum AiSessionType {
   CRISIS_SIM
   DOCUMENTATION_COACH
   MODULE_REVIEW
+  GENERATED_CURRICULUM
+}
+
+enum GeneratedContentKind {
+  SECTION_READING
+  SECTION_QUIZ
+  MODULE_TEACHER
+  MODULE_REVIEW_PACKET
+  CUSTOM_SCENARIO
 }
 
 enum PaymentStatus {
@@ -99,9 +108,54 @@ model User {
   instructedCohorts Cohort[]               @relation("CohortInstructor")
   payments          Payment[]
   createdMaterials  CourseMaterial[]
+  learnerProfile    LearnerProfile?
+  generatedContent  GeneratedContent[]
 
   @@index([role])
   @@index([email])
+}
+
+model LearnerProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  /// story | checklist | short-chunks | peer-talk
+  learningStyle        String   @default("peer-talk")
+  /// plain | standard
+  readingLevel         String   @default("plain")
+  backgroundNotes      String?
+  /// JSON string[] of preferred example themes
+  prefersExamplesJson  String?
+  /// Optional model preference hint: free | balanced | quality
+  modelPreference      String   @default("free")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GeneratedContent {
+  id             String               @id @default(cuid())
+  userId         String
+  courseId       String?
+  moduleId       String?
+  chapterId      String?
+  lessonId       String?
+  kind           GeneratedContentKind
+  title          String
+  contentMd      String
+  contentJson    String?
+  modelUsed      String?
+  provider       String?
+  taskTier       String?
+  promptMetaJson String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, moduleId])
+  @@index([userId, kind])
+  @@index([lessonId])
 }
 
 model Payment {

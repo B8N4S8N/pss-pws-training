@@ -1,15 +1,22 @@
 import { generateText, streamText, Output } from "ai";
 import { z } from "zod";
+import { aiProvidersConfigured, resolveModelForTask } from "@/lib/ai/models";
 
-/** Prefer AI Gateway model strings; works when AI_GATEWAY_API_KEY or Vercel OIDC is present. */
-export const DEFAULT_MODEL = "openai/gpt-5.4";
+/** @deprecated Prefer resolveModelForTask — kept for env docs compatibility */
+export const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
 export function aiConfigured() {
-  return Boolean(
-    process.env.AI_GATEWAY_API_KEY ||
-      process.env.VERCEL_OIDC_TOKEN ||
-      process.env.AI_GATEWAY_BASE_URL
-  );
+  return aiProvidersConfigured();
+}
+
+function modelFor(
+  task: "tiny" | "teach" | "generate" | "evaluate" | "roleplay" | "crisis"
+) {
+  const resolved = resolveModelForTask(task);
+  if (!resolved.model) {
+    throw new Error("AI offline — no provider configured");
+  }
+  return resolved.model as never;
 }
 
 export const evaluationSchema = z.object({
@@ -104,10 +111,10 @@ export async function streamTutorReply(args: {
   messages: { role: "user" | "assistant" | "system"; content: string }[];
 }) {
   return streamText({
-    model: DEFAULT_MODEL,
+    model: modelFor("teach"),
     system: `You are Cascade Guide, an AI tutor for Oregon Peer Support Specialist (PSS) and Peer Wellness Specialist (PWS) students training toward OHA Traditional Health Worker competencies (OAR 950-060-0140).
 
-Teach clearly, use recovery-oriented language, cite competencies when helpful, and never invent Oregon law. If unsure about a regulation, say students should verify with OHA THW materials and their instructor.
+Teach in plain, warm peer language — not textbook voice. Never invent Oregon law. If unsure about a regulation, say students should verify with OHA THW materials and their instructor.
 
 Remind students that AI practice is not a substitute for final human competency evaluation.`,
     messages: args.messages,
@@ -124,7 +131,7 @@ export async function streamModuleReviewReply(args: {
   messages: ChatMessage[];
 }) {
   return streamText({
-    model: DEFAULT_MODEL,
+    model: modelFor("teach"),
     system: `${moduleReviewSystemPrompt(args)}
 
 Transcript so far:
@@ -138,7 +145,7 @@ export async function streamPersonaReply(args: {
   messages: { role: "user" | "assistant"; content: string }[];
 }) {
   return streamText({
-    model: DEFAULT_MODEL,
+    model: modelFor("roleplay"),
     system: `${args.systemPrompt}
 
 Additional rules:
@@ -157,7 +164,7 @@ export async function evaluateRoleplay(args: {
   transcript: string;
 }): Promise<EvaluationResult> {
   const { output } = await generateText({
-    model: DEFAULT_MODEL,
+    model: modelFor("evaluate"),
     output: Output.object({ schema: evaluationSchema }),
     prompt: `Evaluate this peer support training conversation.
 
@@ -180,7 +187,7 @@ export async function evaluateModuleReview(args: {
   transcript: string;
 }): Promise<ModuleReviewEvaluationResult> {
   const { output } = await generateText({
-    model: DEFAULT_MODEL,
+    model: modelFor("evaluate"),
     output: Output.object({ schema: moduleReviewEvaluationSchema }),
     prompt: `Evaluate this Cascade Peer Academy AI Module Review.
 

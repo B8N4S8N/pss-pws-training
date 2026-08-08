@@ -149,7 +149,16 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-4">
+          <Link
+            href="/learn/personalize"
+            className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent"
+          >
+            <h3 className="font-display text-lg text-primary">Personalize</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              AI-created modules in your learning style
+            </p>
+          </Link>
           <Link
             href="/practice"
             className="rounded-2xl border border-primary/10 bg-white/70 p-5 hover:border-accent"

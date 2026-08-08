@@ -58,6 +58,7 @@ export default async function StudentDetailPage({
         take: 50,
         include: { persona: true, lesson: { include: { module: true } } },
       },
+      generatedContent: { orderBy: { createdAt: "desc" }, take: 20 },
       attendanceRecords: true,
       certificates: true,
       evaluations: { include: { instructor: true }, orderBy: { createdAt: "desc" } },
@@ -66,6 +67,9 @@ export default async function StudentDetailPage({
   if (!student) notFound();
   const moduleReviews = student.aiSessions.filter(
     (session) => session.type === "MODULE_REVIEW"
+  );
+  const generatedSessions = student.aiSessions.filter(
+    (session) => session.type === "GENERATED_CURRICULUM"
   );
 
   return (
@@ -237,10 +241,57 @@ export default async function StudentDetailPage({
         </section>
 
         <section className="rounded-2xl border bg-white/70 p-6">
+          <h2 className="font-display text-xl text-primary">
+            AI-generated personalized sections
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Custom delivery from fixed guidelines. Review for supervision; requirements stay
+            shared across the cohort.
+          </p>
+          <div className="mt-4 space-y-3">
+            {student.generatedContent.map((item) => (
+              <article
+                key={item.id}
+                className="border-[3px] border-primary bg-white p-4 shadow-[3px_3px_0_#143028]"
+              >
+                <div className="flex flex-wrap justify-between gap-2">
+                  <h3 className="font-display text-lg text-primary">{item.title}</h3>
+                  <p className="text-xs font-bold uppercase">
+                    {item.provider} · {item.modelUsed || "model n/a"} · {item.kind}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {item.createdAt.toLocaleString()}
+                </p>
+                <details className="mt-2 text-sm">
+                  <summary className="cursor-pointer font-black text-primary">
+                    View generated content
+                  </summary>
+                  <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded bg-mist/60 p-3 text-xs">
+                    {item.contentMd}
+                  </pre>
+                </details>
+              </article>
+            ))}
+            {!student.generatedContent.length && (
+              <p className="text-sm text-muted-foreground">
+                No personalized sections generated yet.
+              </p>
+            )}
+            {generatedSessions.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Also logged {generatedSessions.length} GENERATED_CURRICULUM AI session
+                record(s).
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border bg-white/70 p-6">
           <h2 className="font-display text-xl text-primary">AI practice history</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {student.aiSessions
-              .filter((s) => s.type !== "MODULE_REVIEW")
+              .filter((s) => s.type !== "MODULE_REVIEW" && s.type !== "GENERATED_CURRICULUM")
               .map((s) => (
               <li key={s.id} className="border-t py-2">
                 {s.type} · {s.title} · score {s.overallScore ?? "—"} ·{" "}

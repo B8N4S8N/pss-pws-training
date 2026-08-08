@@ -29,13 +29,17 @@ At the end of a module, the student has a friendly chat with Cascade Guide. The 
 
 The full conversation and final feedback are saved for instructor supervision. This recording is practice evidence only: AI can help students rehearse and show their work, but a human instructor/admin still decides final competency and certification.
 
+## AI-created personalized modules
+
+Students can open **Personalize** and ask Cascade to rebuild a section in their style (story, checklist, short chunks, peer talk). Required skills stay the same for everyone — only stories, examples, and quiz wording change. Generations are saved for instructors. See `docs/MODELS-AND-ROUTING.md` for Gemini / Groq / AI Gateway setup.
+
 ## Student dashboard
 
-After login you see your course progress, hours, upcoming live sessions (if hybrid), certificates, and links to Practice Lab / Tutor / Interview.
+After login you see your course progress, hours, upcoming live sessions (if hybrid), certificates, and links to Personalize / Practice Lab / Tutor / Interview.
 
 ## Admin dashboard (teachers)
 
-Staff can see every student, quiz history, AI practice scores, AI Module Review recordings/transcripts, mark attendance, write competency evaluations, and issue certificates.
+Staff can see every student, quiz history, AI practice scores, AI Module Review recordings/transcripts, personalized generated sections, mark attendance, write competency evaluations, and issue certificates.
 
 ## Delivery options
 
