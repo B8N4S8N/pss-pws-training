@@ -5,6 +5,31 @@ import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
+function lessonKindLabel(lesson: {
+  type: string;
+  isModuleQuiz?: boolean;
+  isModuleAiReview?: boolean;
+  interactivePayload?: string | null;
+}) {
+  let payloadKind: string | undefined;
+  if (lesson.interactivePayload) {
+    try {
+      payloadKind = JSON.parse(lesson.interactivePayload)?.kind;
+    } catch {
+      payloadKind = undefined;
+    }
+  }
+  if (
+    lesson.type === "MODULE_AI_REVIEW" ||
+    lesson.isModuleAiReview ||
+    payloadKind === "moduleAiReview"
+  ) {
+    return "AI MODULE REVIEW";
+  }
+  if (lesson.isModuleQuiz) return "SECTION QUIZ";
+  return lesson.type;
+}
+
 export default async function CourseLearnPage({
   params,
 }: {
@@ -151,14 +176,14 @@ export default async function CourseLearnPage({
                               >
                                 <span className="text-sm">
                                   <span className="mr-2 text-xs font-black uppercase text-accent">
-                                    {lesson.isModuleQuiz ? "MODULE QUIZ" : lesson.type}
+                                    {lessonKindLabel(lesson)}
                                   </span>
                                   {lesson.title}
                                 </span>
                                 <Badge
                                   variant={st === "COMPLETED" ? "default" : "outline"}
                                   className={
-                                    lesson.isModuleQuiz
+                                    lesson.isModuleQuiz || lessonKindLabel(lesson) === "AI MODULE REVIEW"
                                       ? "brutal-box-yellow rounded-none text-xs"
                                       : "rounded-none text-xs"
                                   }

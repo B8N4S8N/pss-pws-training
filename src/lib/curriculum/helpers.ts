@@ -45,10 +45,11 @@ export function callout(
   text: string
 ) {
   const labels: Record<string, string> = {
-    tip: "Tip",
-    story: "Story",
-    practice: "Practice",
-    warning: "Watch-out",
+    tip: "Quick tip",
+    story: "Real scene",
+    practice: "Try it",
+    warning: "Heads up",
+    warn: "Heads up",
   };
 
   return `> **${labels[kind] ?? kind}:** ${text}`;
@@ -196,6 +197,74 @@ export function moduleQuiz(
     passScore: 80,
     isModuleQuiz: true,
     learningModes: ["reading", "reflective"],
+  };
+}
+
+export function sectionQuiz(
+  title: string,
+  questions: QuizQuestion[],
+  minutes = 10
+): LessonSeed {
+  return {
+    slug: slugify(`${title} quiz`),
+    title,
+    type: "QUIZ",
+    estimatedMinutes: minutes,
+    contentMd:
+      "Quick section check. You need 80% to pass. These questions stick to the must-know stuff: scope, safety, choice, and privacy.",
+    interactivePayload: quiz(questions),
+    passScore: 80,
+    isModuleQuiz: false,
+    learningModes: ["reading", "reflective"],
+  };
+}
+
+type ModuleAiReviewOptions = {
+  title: string;
+  moduleSlug: string;
+  goals: string[];
+  mustCover: string[];
+  rubric: {
+    peerVoice: string;
+    choiceConsent: string;
+    scopeSafety: string;
+    warmthWithoutRescue: string;
+  };
+  starterQuestions: string[];
+  minutes?: number;
+  contentMd?: string;
+};
+
+export function moduleAiReview({
+  title,
+  moduleSlug,
+  goals,
+  mustCover,
+  rubric,
+  starterQuestions,
+  minutes = 50,
+  contentMd,
+}: ModuleAiReviewOptions): LessonSeed {
+  return {
+    slug: slugify(`${moduleSlug} ai review`),
+    title,
+    type: "MODULE_AI_REVIEW",
+    estimatedMinutes: minutes,
+    contentMd:
+      contentMd ??
+      "You’ll talk this module through with Cascade Guide. Write like you would talk to a peer, not like a textbook. This practice is recorded for your instructor, and a human instructor still decides completion.",
+    interactivePayload: {
+      kind: "moduleAiReview",
+      moduleSlug,
+      goals,
+      mustCover,
+      rubric,
+      starterQuestions,
+      passScore: 80,
+    },
+    passScore: 80,
+    isModuleAiReview: true,
+    learningModes: ["kinesthetic", "story", "reflective"],
   };
 }
 

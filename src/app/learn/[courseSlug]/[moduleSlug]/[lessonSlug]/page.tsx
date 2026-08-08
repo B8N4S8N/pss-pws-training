@@ -5,6 +5,20 @@ import { prisma } from "@/lib/db";
 import { LessonPlayer } from "@/components/lesson-player";
 import { Badge } from "@/components/ui/badge";
 
+function isModuleAiReviewLesson(lesson: {
+  type: string;
+  isModuleAiReview?: boolean;
+  interactivePayload?: string | null;
+}) {
+  if (lesson.type === "MODULE_AI_REVIEW" || lesson.isModuleAiReview) return true;
+  if (!lesson.interactivePayload) return false;
+  try {
+    return JSON.parse(lesson.interactivePayload)?.kind === "moduleAiReview";
+  } catch {
+    return false;
+  }
+}
+
 export default async function LessonPage({
   params,
 }: {
@@ -27,6 +41,7 @@ export default async function LessonPage({
     include: { chapter: true },
   });
   if (!lesson) notFound();
+  const isModuleAiReview = isModuleAiReviewLesson(lesson);
 
   return (
     <div className="min-h-screen">
@@ -48,7 +63,12 @@ export default async function LessonPage({
             </Badge>
             {lesson.isModuleQuiz && (
               <Badge className="brutal-box rounded-none px-3 py-1">
-                Module quiz
+                Section quiz
+              </Badge>
+            )}
+            {isModuleAiReview && (
+              <Badge className="brutal-box rounded-none px-3 py-1">
+                AI Module Review
               </Badge>
             )}
           </div>

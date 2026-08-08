@@ -21,8 +21,34 @@ const LESSON_TYPES = [
   "DOCUMENTATION",
   "SCENARIO",
   "ROLEPLAY",
+  "MODULE_AI_REVIEW",
   "LIVE_SESSION",
 ];
+
+function lessonKindLabel(lesson: {
+  type: string;
+  isModuleQuiz?: boolean;
+  isModuleAiReview?: boolean;
+  interactivePayload?: string | null;
+}) {
+  let payloadKind: string | undefined;
+  if (lesson.interactivePayload) {
+    try {
+      payloadKind = JSON.parse(lesson.interactivePayload)?.kind;
+    } catch {
+      payloadKind = undefined;
+    }
+  }
+  if (
+    lesson.type === "MODULE_AI_REVIEW" ||
+    lesson.isModuleAiReview ||
+    payloadKind === "moduleAiReview"
+  ) {
+    return "AI MODULE REVIEW";
+  }
+  if (lesson.isModuleQuiz) return "SECTION QUIZ";
+  return lesson.type;
+}
 
 export default async function ModuleCurriculumEditorPage({
   params,
@@ -281,8 +307,7 @@ export default async function ModuleCurriculumEditorPage({
                           {lesson.orderIndex}. {lesson.title}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {lesson.isModuleQuiz ? "MODULE QUIZ · " : ""}
-                          {lesson.type} · {lesson.estimatedMinutes} min
+                          {lessonKindLabel(lesson)} · {lesson.estimatedMinutes} min
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -384,7 +409,17 @@ export default async function ModuleCurriculumEditorPage({
             </div>
             <div className="flex items-center gap-2 md:col-span-2">
               <input id="new-lesson-quiz" name="isModuleQuiz" type="checkbox" />
-              <Label htmlFor="new-lesson-quiz">This is the module quiz</Label>
+              <Label htmlFor="new-lesson-quiz">This is a section quiz</Label>
+            </div>
+            <div className="flex items-center gap-2 md:col-span-2">
+              <input
+                id="new-lesson-module-ai-review"
+                name="isModuleAiReview"
+                type="checkbox"
+              />
+              <Label htmlFor="new-lesson-module-ai-review">
+                This is the AI module review
+              </Label>
             </div>
             <Button className="brutal-btn md:col-span-2" type="submit">
               Add lesson

@@ -32,6 +32,74 @@ export const evaluationSchema = z.object({
 
 export type EvaluationResult = z.infer<typeof evaluationSchema>;
 
+export const moduleReviewEvaluationSchema = z.object({
+  overallScore: z.number().min(0).max(100),
+  passed: z.boolean(),
+  strengths: z.array(z.string()),
+  growthAreas: z.array(z.string()),
+  rubricScores: z.object({
+    peerVoice: z.number().min(0).max(100),
+    choiceConsent: z.number().min(0).max(100),
+    scopeSafety: z.number().min(0).max(100),
+    warmthWithoutRescue: z.number().min(0).max(100),
+  }),
+  coachingNotes: z.string(),
+  redFlags: z.array(z.string()),
+  recommendMorePractice: z.boolean(),
+});
+
+export type ModuleReviewEvaluationResult = z.infer<
+  typeof moduleReviewEvaluationSchema
+>;
+
+type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+
+function formatReviewValue(value: unknown, fallback = "None provided") {
+  if (Array.isArray(value)) {
+    const items = value.map(String).filter(Boolean);
+    return items.length ? items.map((item) => `- ${item}`).join("\n") : fallback;
+  }
+  if (typeof value === "string") return value || fallback;
+  if (value && typeof value === "object") return JSON.stringify(value, null, 2);
+  return fallback;
+}
+
+function moduleReviewSystemPrompt(args: {
+  moduleTitle: string;
+  goals: unknown;
+  mustCover: unknown;
+  rubric: unknown;
+  starterQuestions?: unknown;
+}) {
+  return `You are Cascade Guide, a warm peer teacher for Cascade Peer Academy.
+
+This is an AI Module Review for: ${args.moduleTitle}
+
+Your style:
+- Sound like a supportive peer educator, not an academic examiner.
+- Be conversational, plain-language, hopeful, and practical.
+- Ask one question at a time from the starter flow before moving on.
+- Coach briefly when a student gets close, then invite them to try the next sentence.
+- Never invent Oregon law. If a rule is uncertain, tell the student to verify with OHA THW materials or their instructor.
+- Never let the student diagnose, treat, or act as a clinician. Keep them in peer scope.
+- Remind students to follow real crisis protocols, including 988/emergency services and employer policy when safety risk appears.
+- Record-ready tone: instructors may review this practice evidence, but humans still certify competency.
+
+Module goals:
+${formatReviewValue(args.goals)}
+
+Must-cover checkpoints:
+${formatReviewValue(args.mustCover)}
+
+Starter flow:
+${formatReviewValue(args.starterQuestions)}
+
+Rubric:
+${formatReviewValue(args.rubric)}
+
+Keep replies short enough for chat. Ask exactly one question at the end unless the student is finishing.`;
+}
+
 export async function streamTutorReply(args: {
   messages: { role: "user" | "assistant" | "system"; content: string }[];
 }) {
@@ -42,6 +110,25 @@ export async function streamTutorReply(args: {
 Teach clearly, use recovery-oriented language, cite competencies when helpful, and never invent Oregon law. If unsure about a regulation, say students should verify with OHA THW materials and their instructor.
 
 Remind students that AI practice is not a substitute for final human competency evaluation.`,
+    messages: args.messages,
+  });
+}
+
+export async function streamModuleReviewReply(args: {
+  moduleTitle: string;
+  goals: unknown;
+  mustCover: unknown;
+  rubric: unknown;
+  starterQuestions?: unknown;
+  transcriptSoFar: string;
+  messages: ChatMessage[];
+}) {
+  return streamText({
+    model: DEFAULT_MODEL,
+    system: `${moduleReviewSystemPrompt(args)}
+
+Transcript so far:
+${args.transcriptSoFar || "No prior student transcript yet."}`,
     messages: args.messages,
   });
 }
@@ -85,6 +172,37 @@ Score the student peer specialist (not the simulated peer). Be rigorous but cons
   return output as EvaluationResult;
 }
 
+export async function evaluateModuleReview(args: {
+  moduleTitle: string;
+  goals: unknown;
+  mustCover: unknown;
+  rubric: unknown;
+  transcript: string;
+}): Promise<ModuleReviewEvaluationResult> {
+  const { output } = await generateText({
+    model: DEFAULT_MODEL,
+    output: Output.object({ schema: moduleReviewEvaluationSchema }),
+    prompt: `Evaluate this Cascade Peer Academy AI Module Review.
+
+Module: ${args.moduleTitle}
+
+Goals:
+${formatReviewValue(args.goals)}
+
+Must-cover checkpoints:
+${formatReviewValue(args.mustCover)}
+
+Rubric:
+${formatReviewValue(args.rubric)}
+
+Transcript:
+${args.transcript}
+
+Score the student as an Oregon peer support/wellness student, not as a clinician. Look for peer voice, choice and consent, scope safety, warmth without rescuing, and crisis protocol reminders when relevant. Flag scope slips, clinical overreach, and safety misses in redFlags. Be constructive and plain-spoken.`,
+  });
+  return output as ModuleReviewEvaluationResult;
+}
+
 /** Deterministic offline fallback when AI Gateway is not configured. */
 export function offlineTutorReply(userText: string) {
   return `**Cascade Guide (offline mode)**
@@ -117,6 +235,21 @@ export function offlinePersonaReply(personaName: string, turn: number) {
   return lines[Math.min(turn, lines.length - 1)];
 }
 
+export function offlineModuleReviewReply(turn: number, starterQuestions: unknown) {
+  const starters = Array.isArray(starterQuestions)
+    ? starterQuestions.map(String).filter(Boolean)
+    : [];
+  const fallbackQuestions = [
+    "In your own words, what is the peer role in this module?",
+    "What is one way you would offer choice or consent before supporting someone?",
+    "Where would you hold scope and avoid diagnosing or rescuing?",
+    "If safety concerns came up, what real-world protocol would you follow?",
+  ];
+  const questions = starters.length ? starters : fallbackQuestions;
+  const question = questions[Math.min(turn, questions.length - 1)];
+  return `**Cascade Guide (offline mode)**\n\nThanks for staying with the practice. I’m recording this review for instructor supervision, even while live AI is offline.\n\n${question}`;
+}
+
 export function offlineEvaluation(): EvaluationResult {
   return {
     overallScore: 78,
@@ -145,5 +278,31 @@ export function offlineEvaluation(): EvaluationResult {
     coachingNotes:
       "Offline evaluation placeholder. Connect AI Gateway for nuanced transcript scoring. Review with your instructor for high-stakes competency decisions.",
     recommendMorePractice: true,
+  };
+}
+
+export function offlineModuleReviewEvaluation(): ModuleReviewEvaluationResult {
+  return {
+    overallScore: 84,
+    passed: true,
+    strengths: [
+      "Used a warm peer tone",
+      "Kept support grounded in choice and consent",
+      "Stayed mostly within non-clinical peer scope",
+    ],
+    growthAreas: [
+      "Name crisis routing steps more clearly when safety cues appear",
+      "Use one more reflective statement before offering ideas",
+    ],
+    rubricScores: {
+      peerVoice: 86,
+      choiceConsent: 84,
+      scopeSafety: 82,
+      warmthWithoutRescue: 85,
+    },
+    coachingNotes:
+      "Offline evaluation placeholder. Connect AI Gateway for nuanced transcript scoring. Instructors should review the recording before final competency decisions.",
+    redFlags: [],
+    recommendMorePractice: false,
   };
 }

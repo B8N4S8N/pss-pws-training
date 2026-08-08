@@ -41,6 +41,7 @@ enum LessonType {
   DOCUMENTATION
   SCENARIO
   ROLEPLAY
+  MODULE_AI_REVIEW
   LIVE_SESSION
 }
 
@@ -57,6 +58,7 @@ enum AiSessionType {
   INTERVIEW
   CRISIS_SIM
   DOCUMENTATION_COACH
+  MODULE_REVIEW
 }
 
 enum PaymentStatus {
@@ -206,6 +208,7 @@ model Lesson {
   learningModes      String?
   videoProvider      String?
   isModuleQuiz       Boolean    @default(false)
+  isModuleAiReview   Boolean    @default(false)
   storytellingHook   String?
   /// JSON for quiz questions, scenario branches, documentation prompts, etc.
   interactivePayload String?
@@ -220,6 +223,7 @@ model Lesson {
   quizzes     QuizAttempt[]
   reflections Reflection[]
   materials   CourseMaterial[]
+  aiReviews   AiSession[]
 
   @@unique([moduleId, slug])
   @@index([moduleId, orderIndex])
@@ -386,6 +390,8 @@ model AiSession {
   id           String        @id @default(cuid())
   userId       String
   personaId    String?
+  lessonId     String?
+  moduleId     String?
   type         AiSessionType
   title        String
   messagesJson String        @default("[]")
@@ -399,9 +405,12 @@ model AiSession {
 
   user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   persona AiPersona? @relation(fields: [personaId], references: [id])
+  lesson  Lesson?    @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   @@index([userId, type])
   @@index([personaId])
+  @@index([lessonId])
+  @@index([moduleId])
 }
 
 model AttendanceRecord {

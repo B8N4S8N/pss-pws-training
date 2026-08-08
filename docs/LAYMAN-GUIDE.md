@@ -14,13 +14,20 @@ This platform is built so the organization can show OHA: curriculum, tests, prac
 
 ## How students learn
 
-1. Read short lessons and take quizzes  
+1. Read short lessons and take section quizzes  
 2. Practice “what would you say?” scenarios  
-3. Talk with **AI practice clients** (pretend peers in hard situations) and get feedback  
-4. Use the **AI tutor** when stuck  
-5. Practice a **mock job interview**  
-6. If hybrid: join live Zoom workshops  
-7. Finish with a **live evaluation with a real instructor**
+3. Complete an **AI Module Review** at the end of each module  
+4. Talk with **AI practice clients** (pretend peers in hard situations) and get feedback  
+5. Use the **AI tutor** when stuck  
+6. Practice a **mock job interview**  
+7. If hybrid: join live Zoom workshops  
+8. Finish with a **live evaluation with a real instructor**
+
+## How AI Module Review works
+
+At the end of a module, the student has a friendly chat with Cascade Guide. The guide asks one question at a time, listens for peer voice, choice/consent, scope safety, and warmth without rescuing, then gives coaching and a score.
+
+The full conversation and final feedback are saved for instructor supervision. This recording is practice evidence only: AI can help students rehearse and show their work, but a human instructor/admin still decides final competency and certification.
 
 ## Student dashboard
 
@@ -28,7 +35,7 @@ After login you see your course progress, hours, upcoming live sessions (if hybr
 
 ## Admin dashboard (teachers)
 
-Staff can see every student, quiz history, AI practice scores, mark attendance, write competency evaluations, and issue certificates.
+Staff can see every student, quiz history, AI practice scores, AI Module Review recordings/transcripts, mark attendance, write competency evaluations, and issue certificates.
 
 ## Delivery options
 

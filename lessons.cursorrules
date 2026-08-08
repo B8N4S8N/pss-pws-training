@@ -11,6 +11,7 @@
 7. **Crisis roleplay content is simulated.** Keep UI copy clear that real-world peers require real crisis protocols (988 / employer policy).
 8. **User rule: do not erase code casually.** Prefer modify-in-place; ask before large deletions.
 9. **Marketing UI:** brand-first hero (Cascade Peer Academy), forest/mist/copper palette — avoid purple gradients, cream+terracotta cliché, and Inter/Roboto defaults.
+10. **AI module reviews are practice evidence.** Record transcripts and feedback for instructor supervision; humans certify readiness.
 11. **Auth is Clerk now** — do not reintroduce custom JWT login. Sync Prisma users via `clerkId`. Roles from env email allowlists or `publicMetadata.role`.
 12. **Stripe Checkout must omit `payment_method_types`** so Klarna/Afterpay can appear via dynamic payment methods. Enable BNPL in the Stripe Dashboard, not in code.
 13. **Webhooks:** keep `/api/stripe/webhook` public in `proxy.ts`; verify with `STRIPE_WEBHOOK_SECRET`.

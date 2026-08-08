@@ -32,6 +32,7 @@ export type LessonSeed = {
     | "DOCUMENTATION"
     | "SCENARIO"
     | "ROLEPLAY"
+    | "MODULE_AI_REVIEW"
     | "LIVE_SESSION";
   estimatedMinutes: number;
   contentMd: string;
@@ -42,6 +43,7 @@ export type LessonSeed = {
   videoUrl?: string;
   videoProvider?: "youtube" | "vimeo" | "upload" | "external";
   isModuleQuiz?: boolean;
+  isModuleAiReview?: boolean;
   storytellingHook?: string;
 };
 

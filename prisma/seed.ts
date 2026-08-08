@@ -113,6 +113,7 @@ async function seedCourse(courseData: typeof PSS_COURSE) {
           referencesJson: toJsonString(lesson.referencesJson ?? lesson.references),
           learningModes: toJsonString(lesson.learningModes),
           isModuleQuiz: Boolean(lesson.isModuleQuiz),
+          isModuleAiReview: Boolean(lesson.isModuleAiReview),
           storytellingHook: lesson.storytellingHook ?? null,
           interactivePayload: lesson.interactivePayload
             ? JSON.stringify(lesson.interactivePayload)

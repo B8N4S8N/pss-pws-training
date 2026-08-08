@@ -14,6 +14,7 @@ const LESSON_TYPES = new Set<LessonType>([
   "DOCUMENTATION",
   "SCENARIO",
   "ROLEPLAY",
+  "MODULE_AI_REVIEW",
   "LIVE_SESSION",
 ]);
 
@@ -192,6 +193,9 @@ export async function upsertLessonAction(formData: FormData) {
     estimatedMinutes: numberValue(formData, "estimatedMinutes", 20),
     passScore: numberValue(formData, "passScore", 80),
     isModuleQuiz: value(formData, "isModuleQuiz") === "on",
+    isModuleAiReview:
+      value(formData, "isModuleAiReview") === "on" ||
+      lessonType === "MODULE_AI_REVIEW",
     storytellingHook: nullableValue(formData, "storytellingHook"),
     referencesJson: normalizeReferences(nullableValue(formData, "referencesJson")),
     learningModes: normalizeLearningModes(nullableValue(formData, "learningModes")),

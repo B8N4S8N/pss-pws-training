@@ -8,6 +8,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+type ReviewMessage = {
+  role?: string;
+  content?: string;
+};
+
+type ReviewFeedback = {
+  passed?: boolean;
+  strengths?: string[];
+  growthAreas?: string[];
+  rubricScores?: Record<string, number>;
+  coachingNotes?: string;
+  redFlags?: string[];
+  recommendMorePractice?: boolean;
+};
+
+function parseJson<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function labelFromKey(key: string) {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
 export default async function StudentDetailPage({
   params,
 }: {
@@ -23,13 +53,20 @@ export default async function StudentDetailPage({
       enrollments: { include: { course: true, cohort: true } },
       lessonProgress: { include: { lesson: true }, take: 50 },
       quizAttempts: { orderBy: { createdAt: "desc" }, take: 20 },
-      aiSessions: { orderBy: { createdAt: "desc" }, take: 20, include: { persona: true } },
+      aiSessions: {
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { persona: true, lesson: { include: { module: true } } },
+      },
       attendanceRecords: true,
       certificates: true,
       evaluations: { include: { instructor: true }, orderBy: { createdAt: "desc" } },
     },
   });
   if (!student) notFound();
+  const moduleReviews = student.aiSessions.filter(
+    (session) => session.type === "MODULE_REVIEW"
+  );
 
   return (
     <div className="min-h-screen">
@@ -88,15 +125,131 @@ export default async function StudentDetailPage({
         </section>
 
         <section className="rounded-2xl border bg-white/70 p-6">
+          <h2 className="font-display text-xl text-primary">
+            AI module review recordings
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            These conversations are practice evidence for supervision. They do not
+            replace instructor certification decisions.
+          </p>
+          <div className="mt-4 space-y-4">
+            {moduleReviews.map((session) => {
+              const feedback = parseJson<ReviewFeedback>(session.feedbackJson, {});
+              const messages = parseJson<ReviewMessage[]>(session.messagesJson, []);
+              return (
+                <article
+                  key={session.id}
+                  className="border-[3px] border-primary bg-white p-4 shadow-[3px_3px_0_#143028]"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-display text-lg text-primary">
+                        {session.lesson?.module.title || "Module review"}
+                      </h3>
+                      <p className="text-sm font-medium">
+                        {session.lesson?.title || session.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {(session.completedAt || session.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-none border-[3px] border-primary bg-[#f4e04d] px-3 py-1 text-sm font-black shadow-[2px_2px_0_#143028]">
+                      Score {session.overallScore ?? "-"}
+                      {feedback.passed === undefined
+                        ? ""
+                        : feedback.passed
+                          ? " · passed"
+                          : " · needs review"}
+                    </div>
+                  </div>
+
+                  {feedback.rubricScores && (
+                    <div className="mt-3 grid gap-2 md:grid-cols-4">
+                      {Object.entries(feedback.rubricScores).map(([key, score]) => (
+                        <div key={key} className="rounded-lg border bg-mist/50 p-2">
+                          <p className="text-[10px] font-black uppercase text-primary">
+                            {labelFromKey(key)}
+                          </p>
+                          <p className="font-display text-xl">{score}%</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-black uppercase text-primary">
+                        Growth areas
+                      </p>
+                      <ul className="mt-1 list-disc pl-5 text-sm">
+                        {(feedback.growthAreas || ["No growth areas recorded."]).map(
+                          (item) => (
+                            <li key={item}>{item}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-primary">
+                        Red flags
+                      </p>
+                      <ul className="mt-1 list-disc pl-5 text-sm">
+                        {(feedback.redFlags?.length
+                          ? feedback.redFlags
+                          : ["None recorded."]
+                        ).map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {feedback.coachingNotes && (
+                    <p className="mt-3 rounded-lg bg-mist p-3 text-sm">
+                      {feedback.coachingNotes}
+                    </p>
+                  )}
+
+                  <details className="mt-3 rounded-lg border bg-white p-3 text-sm">
+                    <summary className="cursor-pointer font-black text-primary">
+                      Transcript ({messages.length} messages)
+                    </summary>
+                    <div className="mt-3 space-y-2">
+                      {messages.map((message, index) => (
+                        <div key={index} className="rounded bg-mist/60 p-2">
+                          <p className="text-[10px] font-black uppercase text-primary">
+                            {message.role === "user" ? "Student" : "Cascade Guide"}
+                          </p>
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                </article>
+              );
+            })}
+            {!moduleReviews.length && (
+              <p className="text-sm text-muted-foreground">
+                No AI module reviews recorded yet.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border bg-white/70 p-6">
           <h2 className="font-display text-xl text-primary">AI practice history</h2>
           <ul className="mt-3 space-y-2 text-sm">
-            {student.aiSessions.map((s) => (
+            {student.aiSessions
+              .filter((s) => s.type !== "MODULE_REVIEW")
+              .map((s) => (
               <li key={s.id} className="border-t py-2">
                 {s.type} · {s.title} · score {s.overallScore ?? "—"} ·{" "}
                 {s.createdAt.toLocaleString()}
               </li>
             ))}
-            {!student.aiSessions.length && <li>No AI sessions yet.</li>}
+            {!student.aiSessions.filter((s) => s.type !== "MODULE_REVIEW").length && (
+              <li>No other AI sessions yet.</li>
+            )}
           </ul>
         </section>
 

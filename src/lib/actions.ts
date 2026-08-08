@@ -33,6 +33,38 @@ export async function completeLessonAction(lessonId: string, score?: number) {
   return { ok: true };
 }
 
+export async function completeModuleAiReviewAction(
+  lessonId: string,
+  score: number,
+  feedback?: string
+) {
+  const user = await requireUser(["STUDENT", "INSTRUCTOR", "ADMIN"]);
+  if (!user) return { error: "Unauthorized" };
+
+  await prisma.lessonProgress.upsert({
+    where: { userId_lessonId: { userId: user.id, lessonId } },
+    update: {
+      status: "COMPLETED",
+      score,
+      feedback: feedback ?? undefined,
+      completedAt: new Date(),
+    },
+    create: {
+      userId: user.id,
+      lessonId,
+      status: "COMPLETED",
+      score,
+      feedback: feedback ?? null,
+      completedAt: new Date(),
+    },
+  });
+
+  await refreshEnrollmentProgress(user.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/learn");
+  return { ok: true };
+}
+
 export async function submitQuizAction(
   lessonId: string,
   answers: Record<string, number>

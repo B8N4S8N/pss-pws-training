@@ -16,6 +16,7 @@ const LESSON_TYPES = [
   "DOCUMENTATION",
   "SCENARIO",
   "ROLEPLAY",
+  "MODULE_AI_REVIEW",
   "LIVE_SESSION",
 ];
 
@@ -150,7 +151,18 @@ export default async function LessonCurriculumEditorPage({
               type="checkbox"
               defaultChecked={lesson.isModuleQuiz}
             />
-            <Label htmlFor="lesson-module-quiz">This is the module quiz</Label>
+            <Label htmlFor="lesson-module-quiz">This is a section quiz</Label>
+          </div>
+          <div className="flex items-center gap-2 pt-6">
+            <input
+              id="lesson-module-ai-review"
+              name="isModuleAiReview"
+              type="checkbox"
+              defaultChecked={lesson.isModuleAiReview}
+            />
+            <Label htmlFor="lesson-module-ai-review">
+              This is the AI module review
+            </Label>
           </div>
 
           <div>

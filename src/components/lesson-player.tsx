@@ -8,6 +8,7 @@ import {
   submitReflectionAction,
   submitScenarioAction,
 } from "@/lib/actions";
+import { ModuleAiReview } from "@/components/module-ai-review";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -30,6 +31,7 @@ type LessonPlayerLesson = {
   learningModes: string | null;
   storytellingHook: string | null;
   isModuleQuiz: boolean;
+  isModuleAiReview?: boolean;
   interactivePayload: string | null;
   passScore: number;
 };
@@ -233,6 +235,10 @@ export function LessonPlayer({
     () => videoEmbedUrl(lesson.videoUrl, lesson.videoProvider),
     [lesson.videoProvider, lesson.videoUrl]
   );
+  const isModuleAiReview =
+    lesson.type === "MODULE_AI_REVIEW" ||
+    Boolean(lesson.isModuleAiReview) ||
+    payload?.kind === "moduleAiReview";
 
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [reflection, setReflection] = useState("");
@@ -248,11 +254,16 @@ export function LessonPlayer({
 
   return (
     <div className="space-y-8">
-      {(learningModes.length > 0 || lesson.isModuleQuiz) && (
+      {(learningModes.length > 0 || lesson.isModuleQuiz || isModuleAiReview) && (
         <div className="flex flex-wrap gap-2">
           {lesson.isModuleQuiz && (
             <span className="brutal-box-yellow animate-pop-in rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide">
               Module quiz
+            </span>
+          )}
+          {isModuleAiReview && (
+            <span className="brutal-box-copper animate-pop-in rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide">
+              AI module review
             </span>
           )}
           {learningModes.map((mode) => (
@@ -303,10 +314,19 @@ export function LessonPlayer({
         </a>
       )}
 
-      <article
-        className="prose-lesson brutal-box animate-pop-in p-6 md:p-8"
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(lesson.contentMd) }}
-      />
+      {!isModuleAiReview && (
+        <article
+          className="prose-lesson brutal-box animate-pop-in p-6 md:p-8"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(lesson.contentMd) }}
+        />
+      )}
+
+      {isModuleAiReview && (
+        <ModuleAiReview
+          lesson={lesson}
+          introHtml={renderMarkdown(lesson.contentMd)}
+        />
+      )}
 
       {lesson.type === "QUIZ" && payload?.questions && (
         <div className="brutal-box-yellow animate-pop-in space-y-6 p-6">
@@ -429,7 +449,8 @@ export function LessonPlayer({
         lesson.type === "READING" ||
         lesson.type === "VIDEO" ||
         lesson.type === "LIVE_SESSION" ||
-        lesson.type === "ROLEPLAY") && (
+        lesson.type === "ROLEPLAY") &&
+        !isModuleAiReview && (
         <div className="brutal-box animate-pop-in space-y-3 p-6">
           {lesson.type === "DOCUMENTATION" && (
             <>
