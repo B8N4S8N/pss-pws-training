@@ -1,18 +1,4 @@
-import {
-  callout,
-  deepDiveSection,
-  documentation,
-  flattenModuleLessons,
-  moduleQuiz,
-  moduleWithFlatLessons,
-  reading,
-  reflection,
-  scenario,
-  slugify,
-  storyReading,
-  videoLesson,
-  withModuleQuiz,
-} from "./helpers";
+import { buildHybridModule, section, type HybridModuleSpec, type SectionQuizSpec } from "./hybrid";
 import {
   HHS_HIPAA,
   LIFELINE_988,
@@ -27,46 +13,7 @@ import {
   SAMHSA_RECOVERY,
   SAMHSA_TRAUMA,
 } from "./references";
-import type {
-  ChapterSeed,
-  CourseSeed,
-  LearningMode,
-  LessonSeed,
-  ModuleSeed,
-  QuizQuestion,
-  ReferenceLink,
-} from "./types";
-
-type PracticeChoice = {
-  text: string;
-  feedback: string;
-  score: number;
-};
-
-type PssModuleSpec = {
-  slug: string;
-  title: string;
-  shortTitle: string;
-  description: string;
-  estimatedHours: number;
-  oarReferences: string[];
-  competencies: string[];
-  hook: string;
-  coreTruth: string;
-  preservedContent: string;
-  oregonContext: string;
-  keySkills: string[];
-  watchPrompt: string;
-  scenarioTitle: string;
-  scenarioPrompt: string;
-  choices: PracticeChoice[];
-  appliedTitle: string;
-  appliedPrompt: string;
-  appliedKind: "documentation" | "reflection" | "roleplay" | "live";
-  references: ReferenceLink[];
-  modes: LearningMode[];
-  quizFocus: string;
-};
+import type { CourseSeed } from "./types";
 
 const commonPeerRefs = [
   OHA_THW_RULES,
@@ -75,882 +22,1736 @@ const commonPeerRefs = [
   SAMHSA_PEER_SUPPORT,
 ];
 
-function bullets(items: string[]) {
-  return items.map((item) => `- ${item}`).join("\n");
-}
-
-function foundationBody(spec: PssModuleSpec) {
-  return `# ${spec.shortTitle}: the peer stance
-
-${spec.coreTruth}
-
-Here is the real talk for Oregon peer work: people do not need us to perform expertise at them. They need a steady relationship, transparent choices, and support that respects their definition of recovery. A Peer Support Specialist works from lived experience and a clear non-clinical scope. That means we can share story, model hope, help navigate systems, practice skills, and advocate with a person. It also means we do not diagnose, prescribe, coerce treatment, or turn our own recovery pathway into a rule for somebody else.
-
-${callout(
-  "story",
-  `${spec.hook} Hold that feeling while you read. The goal is not to become a perfect helper. The goal is to become a trustworthy peer who can stay curious under pressure.`
-)}
-
-## Preserved course foundation
-
-${spec.preservedContent}
-
-## A scene you might recognize
-
-Imagine sitting with someone who has already been through intake forms, waitlists, and well-meaning advice that missed the mark. They glance at your badge and wonder whether you are another professional who will talk *at* them. When you share that you know the system from the inside of recovery — carefully, with consent, and without turning your path into their prescription — the room often changes. That is the heart of this module: presence before performance.
-
-In ${spec.quizFocus}, the temptation is to rush toward the "right" answer. Resist that. Ask what the person wants from the conversation. Name what you can and cannot do. Offer options. Leave space for silence. Silence is not failure; sometimes it is the first honest moment of the day.
-
-## Oregon practice lens
-
-${spec.oregonContext}
-
-Use the OHA Traditional Health Worker rules as your anchor and your employer's policy as your local operating manual. When there is tension between heart and role, slow down. Ask: "What is the peer asking for? What is within my scope? What protects dignity, choice, and safety?" That pause is not bureaucracy for its own sake; it is how we keep peer support from becoming another system that takes over.
-
-## Learning for every style
-
-- **Reading / reflective:** underline one sentence that challenges your habits and journal why.
-- **Visual / auditory:** sketch a three-box flowchart — peer ask → peer response → next shared step.
-- **Kinesthetic:** rehearse two sentences out loud: one that invites choice, one that names a boundary.
-- **Story:** notice where lived experience helps and where it risks centering you instead of the peer.
-
-## Common traps in this topic
-
-- Fixing too fast because discomfort is hard to sit with
-- Using jargon that makes Oregon systems feel even more closed
-- Treating cultural difference as a problem instead of a source of wisdom
-- Confusing "being available" with having no boundaries
-- Forgetting that AI practice is rehearsal — human instructors authorize completion
-
-## What students should be able to do
-
-${bullets(spec.keySkills)}
-
-${callout(
-  "practice",
-  "Before you leave this chapter, write one credibility sentence from lived experience and one restraint sentence about your role. Keep both visible during the scenario."
-)}
-
-Close this reading by naming one place where your lived experience gives you credibility and one place where your role requires restraint. Both are part of ethical peer practice.${deepDiveSection(
-    "shared anchors",
-    spec.references
-  )}`;
-}
-
-function practiceBody(spec: PssModuleSpec) {
-  return `# Practice moves: ${spec.shortTitle}
-
-Skill grows when we translate values into observable moves. In this module, your job is to turn warmth into words, choice into structure, and accountability into practice. A peer can usually feel the difference between "I am managing you" and "I am with you while you decide what comes next." The first narrows the room. The second creates enough safety for honesty.
-
-Start with consent. Ask before giving information, before sharing personal experience, before calling a provider, and before writing anything that is not routine. Then use plain language. Oregon systems can be full of acronyms: OHP, CCO, THW, CMHP, ROI, HIPAA. Translate without talking down. If the person looks confused, treat that as feedback about the system, not a failure in the person.
-
-## Micro-skills for this module
-
-${bullets(spec.keySkills)}
-
-## A short rehearsal script
-
-Try this cadence in your own words:
-
-1. **Open:** "Thanks for trusting me with this. What feels most important right now?"
-2. **Clarify role:** "I can walk beside you and help navigate. I cannot make clinical decisions or promise outcomes I do not control."
-3. **Offer choice:** "We could look at options together, practice one skill, or just talk through what happened. What would help?"
-4. **Close with agency:** "What do you want to try before we meet again, and how can I support that without taking over?"
-
-Adapt the words to culture, language access, disability access, and the person's energy. Scripts are training wheels, not handcuffs.
-
-## When the conversation gets messy
-
-Do not rush to the most dramatic intervention. Notice what is urgent, what is important, and what belongs to someone else's professional scope. If safety is at risk, follow protocol. If dignity is at risk, repair. If the peer is asking you to rescue, return to partnership: "I can do this with you. I cannot do it for you in a way that takes your voice out of the process."
-
-${callout(
-  "warn",
-  "If you notice yourself performing competence instead of practicing curiosity, pause. Name the pressure to yourself, then return to the peer's goals."
-)}
-
-${callout(
-  "practice",
-  "In the next activity, answer as if the peer is sitting in front of you. Choose language you could actually say out loud."
-)}`;
-}
-
-function watchContent(spec: PssModuleSpec) {
-  return `# Watch-along: ${spec.shortTitle}
-
-${spec.watchPrompt}
-
-If your cohort has an instructor-selected video, watch it here. If no video is assigned, use this as a guided observation lab: listen to a public recovery, communication, trauma-informed care, or systems-navigation training clip chosen by your instructor and write down three moments where the speaker either increased or decreased choice.
-
-While watching, track:
-
-- What language sounds respectful and plain?
-- Where does the helper resist the urge to fix?
-- What would be different if this happened in a rural Oregon community with fewer immediate resources?
-- What would need supervisor consultation or documentation?
-
-Bring one quote or observation into the discussion board or live session.`;
-}
-
-function buildQuiz(spec: PssModuleSpec): QuizQuestion[] {
-  const skillA = spec.keySkills[0] ?? "Stay within peer scope";
-  const skillB = spec.keySkills[1] ?? "Center peer choice";
-  return [
-    {
-      id: `${spec.slug}-q1`,
-      prompt: `What is the safest peer stance in ${spec.quizFocus}?`,
-      options: [
-        "Take control quickly so the peer does not have to decide",
-        "Use lived experience, choice, and role clarity while staying within scope",
-        "Avoid the topic because it is always clinical",
-        "Give the same advice that worked in your own recovery",
-      ],
-      correctIndex: 1,
-      explanation:
-        "Peer work combines lived experience with consent, scope, and self-determination.",
-    },
-    {
-      id: `${spec.slug}-q2`,
-      prompt: `In ${spec.shortTitle.toLowerCase()}, which action best matches: "${skillA}"?`,
-      options: [
-        "Do the task for the peer without asking so it gets done faster",
-        "Invite collaboration, name your role, and practice the skill with the peer's consent",
-        "Wait until a clinician takes over every decision",
-        "Share every detail of your own story before hearing theirs",
-      ],
-      correctIndex: 1,
-      explanation: `Module skill focus: ${skillA}. Peer support is collaborative, consent-based, and scope-aware.`,
-    },
-    {
-      id: `${spec.slug}-q3`,
-      prompt: "When you are unsure about a boundary, safety, or legal issue, your next step should be to:",
-      options: [
-        "Handle it privately so the peer knows you are loyal",
-        "Post the details online without names",
-        "Consult supervisor/policy and document according to organizational requirements",
-        "Ignore the concern unless someone complains",
-      ],
-      correctIndex: 2,
-      explanation:
-        "Consultation and policy protect the peer, the worker, and the integrity of peer-delivered services.",
-    },
-    {
-      id: `${spec.slug}-q4`,
-      prompt: `Which response best applies "${skillB}" in ${spec.quizFocus}?`,
-      options: [
-        "Push one preferred pathway because it worked for someone else",
-        "Slow down, check what matters to the peer, and co-create the next step",
-        "Escalate immediately for any discomfort",
-        "Avoid documenting anything related to the interaction",
-      ],
-      correctIndex: 1,
-      explanation: `Module skill focus: ${skillB}. Recovery-oriented practice follows the peer's meaningful next step.`,
-    },
-    {
-      id: `${spec.slug}-q5`,
-      prompt: "Which response best reflects a recovery-oriented approach?",
-      options: [
-        "You need to follow the program exactly or you are not serious",
-        "What would feel like a meaningful next step to you, and what support would help?",
-        "I know what you should do because my recovery worked",
-        "Let me decide and I will tell you later",
-      ],
-      correctIndex: 1,
-      explanation:
-        "Recovery-oriented support centers the person's goals, voice, and practical next steps.",
-    },
-    {
-      id: `${spec.slug}-q6`,
-      prompt: "Why are Oregon OAR/OHA references included in this module?",
-      options: [
-        "They replace employer policy in every situation",
-        "They anchor training expectations and THW scope while local policy guides day-to-day operations",
-        "They allow peers to provide clinical treatment",
-        "They are optional trivia and do not matter after training",
-      ],
-      correctIndex: 1,
-      explanation:
-        "OHA/OAR standards define training and certification context; workers still follow role, site, and supervisor guidance.",
-    },
-    {
-      id: `${spec.slug}-q7`,
-      prompt: "A strong documentation or reflection after peer contact should:",
-      options: [
-        "Use respectful facts, peer voice, goals, and relevant next steps",
-        "Include gossip because it might be useful later",
-        "Label the peer's character to save time",
-        "Avoid mentioning what support was provided",
-      ],
-      correctIndex: 0,
-      explanation:
-        "Peer documentation should be factual, respectful, necessary, and connected to the peer's goals.",
-    },
-    {
-      id: `${spec.slug}-q8`,
-      prompt: `How should Cascade Peer Academy students treat AI practice for ${spec.shortTitle.toLowerCase()}?`,
-      options: [
-        "As the final authority that replaces instructor evaluation",
-        "As a rehearsal space for feedback before human competency review",
-        "As optional entertainment with no learning value",
-        "As a substitute for crisis protocols and supervision",
-      ],
-      correctIndex: 1,
-      explanation:
-        "AI supports skill rehearsal; human instructors authorize completion and competency decisions.",
-    },
-  ];
-}
-
-function appliedLesson(spec: PssModuleSpec): LessonSeed {
-  const payload = {
-    prompt: spec.appliedPrompt,
-    rubric: [
-      "Centers peer voice and self-defined goals",
-      "Uses respectful, non-stigmatizing language",
-      "Identifies role limits and consultation needs",
-      "Names one practical next step",
-    ],
+function q(
+  focus: string,
+  safeAction: string,
+  unsafeAction: string,
+  scopeBoundary: string,
+  boundaryMistake: string,
+  privacyAction: string,
+  privacyMistake: string,
+  choiceAction: string,
+  choiceMistake: string
+): SectionQuizSpec {
+  return {
+    focus,
+    safeAction,
+    unsafeAction,
+    scopeBoundary,
+    boundaryMistake,
+    privacyAction,
+    privacyMistake,
+    choiceAction,
+    choiceMistake,
   };
-
-  if (spec.appliedKind === "documentation") {
-    return documentation(
-      spec.appliedTitle,
-      spec.appliedPrompt,
-      payload,
-      30,
-      { references: spec.references, learningModes: ["reading", "kinesthetic"] }
-    );
-  }
-
-  if (spec.appliedKind === "roleplay") {
-    return {
-      slug: slugify(spec.appliedTitle),
-      title: spec.appliedTitle,
-      type: "ROLEPLAY",
-      estimatedMinutes: 45,
-      contentMd: `${spec.appliedPrompt}\n\nComplete the assigned AI Practice Lab simulation, then save one sentence you would reuse and one sentence you would revise.`,
-      interactivePayload: payload,
-      references: spec.references,
-      learningModes: ["auditory", "kinesthetic", "reflective"],
-    };
-  }
-
-  if (spec.appliedKind === "live") {
-    return {
-      slug: slugify(spec.appliedTitle),
-      title: spec.appliedTitle,
-      type: "LIVE_SESSION",
-      estimatedMinutes: 60,
-      contentMd: `${spec.appliedPrompt}\n\nBring your questions, a roleplay challenge, and a note about how you used feedback from this module.`,
-      interactivePayload: payload,
-      references: spec.references,
-      learningModes: ["auditory", "kinesthetic", "reflective"],
-    };
-  }
-
-  return reflection(spec.appliedTitle, spec.appliedPrompt, 25, {
-    references: spec.references,
-    learningModes: ["reflective", "reading"],
-    interactivePayload: payload,
-  });
 }
 
-function buildModule(spec: PssModuleSpec): ModuleSeed {
-  const baseChapters: ChapterSeed[] = [
-    {
-      slug: `${spec.slug}-foundations`,
-      title: "Chapter 1 - Foundations and Oregon scope",
-      description:
-        "Start with story, role clarity, OHA/OAR anchors, and the practical meaning of peer support.",
-      lessons: [
-        storyReading({
-          title: `${spec.shortTitle}: real talk and role clarity`,
-          hook: spec.hook,
-          body: foundationBody(spec),
-          minutes: 35,
-          references: spec.references,
-          learningModes: spec.modes,
-        }),
-        videoLesson(
-          `Watch-along: ${spec.shortTitle}`,
-          watchContent(spec),
-          20,
-          {
-            references: spec.references,
-            learningModes: ["visual", "auditory", "reflective"],
-          }
-        ),
-      ],
+function aiReview(
+  goals: string[],
+  mustCover: string[],
+  starterQuestions: string[]
+): HybridModuleSpec["aiReview"] {
+  return {
+    goals,
+    mustCover,
+    rubric: {
+      peerVoice: "Sounds like a real peer conversation: plain, grounded, hopeful, and not preachy.",
+      choiceConsent: "Asks permission, offers menus, and lets the peer define what matters.",
+      scopeSafety: "Names peer scope clearly and routes safety concerns to policy, 988, crisis teams, or supervision.",
+      warmthWithoutRescue: "Shows care without taking over, promising outcomes, or making the peer dependent.",
     },
-    {
-      slug: `${spec.slug}-practice`,
-      title: "Chapter 2 - Practice moves",
-      description:
-        "Turn values into observable communication, advocacy, and support behaviors.",
-      lessons: [
-        reading(
-          `Practice moves for ${spec.shortTitle}`,
-          practiceBody(spec),
-          30,
-          {
-            references: spec.references,
-            learningModes: ["reading", "kinesthetic", "reflective"],
-          }
-        ),
-        scenario(
-          spec.scenarioTitle,
-          `# ${spec.scenarioTitle}\n\n${spec.scenarioPrompt}\n\nChoose the response that best protects dignity, choice, and safety. Then read the feedback before continuing.`,
-          {
-            scenario: spec.scenarioPrompt,
-            choices: spec.choices,
-          },
-          25,
-          { references: spec.references }
-        ),
-      ],
-    },
-    {
-      slug: `${spec.slug}-integration`,
-      title: "Chapter 3 - Integration and competency check",
-      description:
-        "Apply the module to documentation, reflection, roleplay, or live discussion before the final mini-quiz.",
-      lessons: [
-        appliedLesson(spec),
-        reading(
-          `Integration checklist: ${spec.shortTitle}`,
-          `# Integration checklist
-
-Before the quiz, make the learning concrete. Name the peer support value you used most in this module. Then name the operational safeguard: consent, confidentiality, crisis protocol, documentation, supervision, or a warm handoff. Strong peer work needs both. Values without structure can drift into over-involvement; structure without values can feel cold and system-centered.
-
-Use this final checklist:
-
-- I can describe the PSS role in this topic without sounding clinical or dismissive.
-- I can identify when to slow down, ask permission, and return choice to the peer.
-- I can name at least one Oregon resource, rule, or system partner connected to the topic.
-- I can write a respectful note or reflection that would make sense to the peer if they read it.
-- I know when to use supervision or emergency protocols.
-
-${callout(
-  "tip",
-  "If you missed more than one scenario feedback point, revisit Chapter 2 before attempting the quiz."
-)}`,
-          15,
-          {
-            references: spec.references,
-            learningModes: ["reading", "reflective"],
-          }
-        ),
-      ],
-    },
-  ];
-
-  const chapters = withModuleQuiz(
-    baseChapters,
-    moduleQuiz(
-      `${spec.slug}-module-quiz`,
-      `Mini-Quiz: ${spec.shortTitle}`,
-      buildQuiz(spec),
-      20
-    )
-  );
-
-  return moduleWithFlatLessons({
-    slug: spec.slug,
-    title: spec.title,
-    description: spec.description,
-    estimatedHours: spec.estimatedHours,
-    oarReferences: spec.oarReferences,
-    competencies: spec.competencies,
-    chapters,
-  });
+    starterQuestions,
+  };
 }
 
-const PSS_SPECS: PssModuleSpec[] = [
+const pssModuleSpecs: HybridModuleSpec[] = [
   {
     slug: "recovery-foundations",
-    title: "Module 1 - Recovery Foundations & the Peer Role",
-    shortTitle: "Recovery foundations",
+    title: "Recovery Foundations",
     description:
-      "Ground yourself in recovery principles, recovery capital, and the unique value of lived experience in Oregon's peer-delivered services system.",
+      "Peer support basics: hope, lived experience, recovery choice, role clarity, and the difference between helping and taking over.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0140(2)(s)", "950-060-0140(5)(b)", "950-060-0140(5)(c)"],
-    competencies: ["recovery-principles", "peer-role-scope", "recovery-capital", "lived-experience"],
-    hook:
-      "Here's the real talk: your story is powerful, but the peer's story is the center of the work.",
-    coreTruth:
-      "Peer support is rooted in mutuality, hope, and lived experience. Recovery is self-defined: housing, relationships, purpose, wellness, substance-use goals, belonging, and meaning can all count.",
-    preservedContent:
-      "PSS and PWS workers are Traditional Health Workers in Oregon. They walk beside people; they do not diagnose, prescribe, provide therapy as licensed clinicians, or make medical decisions for someone else. They may share recovery stories strategically, model wellness and coping, help peers navigate services and systems, advocate, accompany, and connect to resources. A certificate of completion supports an OHA THW application; it is not automatic state certification.",
-    oregonContext:
-      "Oregon's peer-delivered services grew from community wisdom and formal THW policy. Students should understand that OHA approval, registry enrollment, and employer credentialing are related but distinct steps.",
-    keySkills: [
-      "Explain peer scope in plain language",
-      "Use lived experience strategically without taking over",
-      "Identify recovery capital across human, social, physical, and cultural domains",
-      "Hold hope without minimizing pain",
+    oarReferences: ["OAR 950-060-0140 peer support foundations", "OAR 410-180 THW role standards"],
+    competencies: ["Recovery principles", "Peer role clarity", "Strategic story sharing", "Self-determination"],
+    peerNugget:
+      "A peer voice does not need fancy language. It needs honesty, humility, and respect for the other person's path.",
+    references: [...commonPeerRefs, SAMHSA_RECOVERY],
+    sections: [
+      section("Recovery Is Personal", {
+        description: "Start with the peer's own definition of recovery, not yours.",
+        scene:
+          "Maya is waiting outside group with her hood up and her jaw tight. Someone just told her, 'You have to want recovery bad enough.' She looks at you and says, 'Recovery for who? Their version or mine?'",
+        plainTalk:
+          "Recovery is not a poster on the wall. It is the life a person is trying to build, one doable choice at a time. For one person it may include medication, meetings, family repair, housing, faith, culture, art, quiet mornings, or fewer hospital visits. For another person, today’s recovery may simply mean eating, showering, and not giving up.",
+        trySaying: [
+          "When you say recovery, what does that word mean to you today?",
+          "I can share what helped me if you want, but your path does not have to copy mine.",
+          "What would make tomorrow a little more livable?",
+        ],
+        practice:
+          "Write a one-sentence recovery definition that leaves room for someone else's culture, body, family, and timeline.",
+        commonTrap:
+          "The trap is using your success story like a measuring stick. Hope is helpful; pressure dressed up as hope is not.",
+        mustKnow:
+          "Peers support self-defined recovery. We do not decide what recovery must look like for someone else.",
+        quiz: q(
+          "a first conversation about recovery",
+          "Ask what recovery means to the peer today and reflect their words back.",
+          "Explain the recovery path that worked for you and encourage them to follow it closely.",
+          "Share lived experience with permission and support the peer's own goals.",
+          "Tell the peer which recovery choices are clinically correct.",
+          "Keep personal details private unless the peer consents or safety policy requires action.",
+          "Tell the team the peer is not serious because their recovery definition is different.",
+          "Offer a few possible next steps and ask which one fits.",
+          "Choose the next step for them so they do not get overwhelmed."
+        ),
+      }),
+      section("Lived Experience Without Taking Over", {
+        description: "Use your story as a flashlight, not a spotlight.",
+        scene:
+          "Dre says, 'You ever been so anxious you couldn't answer the phone?' You have. A lot. You can feel three stories lining up in your mouth, all true, all intense.",
+        plainTalk:
+          "Strategic story sharing means your story serves the peer's moment. You share a slice, not the whole movie. You ask permission first. You skip details that could scare, glamorize, or pull attention away from the peer. Then you turn the conversation back: 'Does any part of that connect, or is your situation different?'",
+        trySaying: [
+          "A small piece of my story might fit here. Want to hear it?",
+          "What helped me was one option, not the rule.",
+          "I do not want to make this about me. What part of your story feels loud right now?",
+        ],
+        practice:
+          "Pick one recovery story from your life and cut it to three sentences: before, turning point, what helped. Leave out the dramatic extra.",
+        commonTrap:
+          "The trap is bonding through too much detail. It can feel close in the moment and still leave the peer holding your pain.",
+        mustKnow:
+          "Lived experience is a tool. Consent, purpose, and timing decide whether it helps.",
+        quiz: q(
+          "sharing lived experience",
+          "Ask permission, share a brief relevant piece, and return attention to the peer.",
+          "Share the full story so the peer knows you really understand.",
+          "Use lived experience for hope and connection, not diagnosis or advice-giving.",
+          "Compare symptoms and tell the peer what condition they probably have.",
+          "Avoid names and details that identify other people unless there is clear consent and policy support.",
+          "Repeat a peer's story in group because it teaches a good lesson.",
+          "Ask whether the story fits and let the peer decide what to use.",
+          "Keep talking until the peer agrees your lesson applies."
+        ),
+      }),
+      section("Hope With Honest Limits", {
+        description: "Be hopeful without promising what you cannot control.",
+        scene:
+          "A peer gets denied housing again and says, 'So what, I’m just stuck forever?' Your heart wants to say, 'No, I promise we’ll fix this.' But you do not control the waitlist.",
+        plainTalk:
+          "Hope is not a guarantee. Real hope tells the truth and still leaves room for movement. A peer can say, 'This is unfair and exhausting,' while also helping look for the next phone call, appeal, warm handoff, or rest break. Honest hope builds trust because it does not sell magic.",
+        trySaying: [
+          "I cannot promise the outcome, but I can stay with you while we look at options.",
+          "This denial is real. It is not the end of your story.",
+          "Do you want problem-solving, a minute to breathe, or both?",
+        ],
+        practice:
+          "Practice replacing 'I promise' with 'I can' statements. Write three things you truly can do in your role.",
+        commonTrap:
+          "The trap is rescuing with big promises because disappointment feels awful. Broken promises hurt trust more than a kind limit.",
+        mustKnow:
+          "Peers can offer support, navigation, and hope. We cannot guarantee housing, treatment, benefits, or safety outcomes.",
+        quiz: q(
+          "offering hope after a setback",
+          "Validate the setback, name what you can do, and look at options with consent.",
+          "Promise the peer you will get the outcome fixed so they do not lose hope.",
+          "Provide peer support and navigation without guaranteeing system decisions.",
+          "Tell the peer a denial means they are not ready for recovery.",
+          "Document and share only what your role and policy allow, especially if safety concerns come up.",
+          "Post about the unfair denial online without names because advocacy matters.",
+          "Ask what kind of support they want before jumping into problem-solving.",
+          "Insist on problem-solving immediately because sitting with feelings wastes time."
+        ),
+      }),
+      section("Peer Scope in Plain English", {
+        description: "Know what peers do, what peers do not do, and when to ask for backup.",
+        scene:
+          "At the end of a check-in, Lena asks, 'Do you think I’m bipolar? My sister says I am.' You care about her and you have your own experience with mood swings. This is where scope protects both of you.",
+        plainTalk:
+          "Scope means the lane you are trained and allowed to drive in. A Peer Support Specialist can listen, share lived experience, support goals, help navigate resources, practice questions, advocate with consent, and connect to support. A peer does not diagnose, prescribe, provide therapy, make legal decisions, or replace emergency help.",
+        trySaying: [
+          "I cannot diagnose, but I can help you write down what you are noticing for a provider.",
+          "That sounds scary. Do you want support thinking about who could help assess it?",
+          "My role is peer support. If safety is immediate, we need to use the crisis plan now.",
+        ],
+        practice:
+          "Make two columns: 'peer lane' and 'not peer lane.' Put five real requests you might hear into the columns.",
+        commonTrap:
+          "The trap is answering outside scope because you want to be useful. Clear role language is useful.",
+        mustKnow:
+          "Oregon peer work is non-clinical. Recognize, relate, support, and route; do not diagnose or prescribe.",
+        quiz: q(
+          "a peer asking for a diagnosis",
+          "Say you cannot diagnose and offer to help prepare questions for a qualified provider.",
+          "Give your best guess because the peer asked directly and trusts you.",
+          "Stay in the peer lane: support, story with consent, navigation, advocacy, and warm handoffs.",
+          "Recommend a medication change based on what helped you.",
+          "Follow privacy rules and safety policy when helping prepare information for another provider.",
+          "Text the provider details without the peer knowing because it might help.",
+          "Offer choices: write questions, call a clinic together, or sit with the worry for a few minutes.",
+          "Tell them the only responsible choice is the one you would choose."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Watch for how recovery language changes when the helper shifts from fixing deficits to noticing resources and next steps.",
-    scenarioTitle: "Scenario: The story that starts to take over",
-    scenarioPrompt:
-      "A peer says, 'You got sober, so tell me exactly what to do.' You feel pulled to give your whole recovery story and a step-by-step plan.",
-    choices: [
-      { text: "Give your complete story and tell them to follow it closely.", feedback: "This centers you and turns lived experience into prescription.", score: 35 },
-      { text: "Ask what they hope will be different, share one brief relevant piece with permission, and return the focus to their choices.", feedback: "Strategic sharing plus autonomy keeps the peer's recovery in the lead.", score: 100 },
-      { text: "Refuse to talk about recovery because sharing is never appropriate.", feedback: "Peer work can include story when it is purposeful, brief, and consent-based.", score: 55 },
-    ],
-    appliedTitle: "Reflection: your story as a tool",
-    appliedPrompt:
-      "Write 250-400 words on how you might share a piece of your lived experience strategically with a peer: what you would share, what you would hold private, and how you would keep the focus on their goals.",
-    appliedKind: "reflection",
-    references: [SAMHSA_RECOVERY, ...commonPeerRefs],
-    modes: ["story", "reading", "reflective"],
-    quizFocus: "recovery foundations and peer role clarity",
+    aiReview: aiReview(
+      [
+        "Explain recovery as self-defined and hopeful.",
+        "Use lived experience with consent and purpose.",
+        "Name peer scope in plain language.",
+        "Offer hope without promising outcomes.",
+      ],
+      [
+        "No diagnosing, prescribing, or therapy claims.",
+        "Peer choice leads the plan.",
+        "Strategic story sharing must be brief and consent-based.",
+        "AI practice is recorded but does not certify anyone.",
+      ],
+      [
+        "Tell me what peer support is in your own words.",
+        "How would you respond if someone asks for a diagnosis?",
+        "Give me a three-sentence story share that keeps focus on the peer.",
+        "What is one promise a peer should not make?",
+        "How do you keep hope real when systems disappoint people?",
+      ]
+    ),
   },
   {
     slug: "communication",
-    title: "Module 2 - Communication & Active Listening",
-    shortTitle: "Communication",
+    title: "Communication That Feels Human",
     description:
-      "Practice cross-cultural communication, reflective listening, open questions, and presence.",
+      "Listening, reflecting, asking useful questions, repairing ruptures, and saying the thing in a way a real person can hear.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0140(2)(b)", "950-060-0140(2)(c)"],
-    competencies: ["active-listening", "open-questions", "reflective-statements", "empowerment"],
-    hook:
-      "Here's the real talk: silence can be skill, but only when it is paired with attention and respect.",
-    coreTruth:
-      "Active listening in peer work is attention, reflection, curiosity, and cultural humility without hijacking the conversation. Presence is not passive; it is a disciplined way of making room.",
-    preservedContent:
-      "Core skills include minimal encouragers, body language that fits the cultural context, reflective statements, summaries, open-ended questions that invite story, and the ability to sit with silence. The empowerment stance asks, 'What matters most to you right now?' instead of defaulting to 'Have you tried...?'",
-    oregonContext:
-      "Communication across Oregon may happen in clinic rooms, recovery centers, tents, jail transition programs, tribal communities, shelters, and telehealth. Tone, pacing, and assumptions must adapt to the person and setting.",
-    keySkills: [
-      "Use open questions that invite story rather than interrogation",
-      "Offer reflections that check meaning and feeling",
-      "Summarize without adding your own agenda",
-      "Notice power, culture, and accessibility in communication",
+    oarReferences: ["OAR 950-060-0140 communication skills", "OAR 410-180 THW engagement standards"],
+    competencies: ["Active listening", "Reflection", "Plain language", "Repair"],
+    peerNugget:
+      "Good communication is not a performance. It is a steady way of saying, 'I am here, and you still get to be you.'",
+    references: [...commonPeerRefs],
+    sections: [
+      section("Listening Before Fixing", {
+        description: "Hear the person before reaching for solutions.",
+        scene:
+          "Sam walks in saying, 'Nobody listens. They just hand me pamphlets.' You can already think of three resources, but his face says the pamphlet pile is part of the problem.",
+        plainTalk:
+          "Listening is active work. It means you track the words, the feeling, the pace, and what the person is not ready to say yet. You do not have to agree with every detail to respect the experience. Often the most useful first response is a simple reflection that proves you heard the heart of it.",
+        trySaying: [
+          "You have had a lot of people talk at you, and you want someone to actually hear you.",
+          "Before I offer ideas, what do you need me to understand?",
+          "Do you want me to listen, help sort options, or both?",
+        ],
+        practice:
+          "Listen to a friend or podcast for two minutes and write only reflections, not advice.",
+        commonTrap:
+          "The trap is treating silence like a hole you must fill. Sometimes silence is the peer deciding whether you are safe.",
+        mustKnow:
+          "Listening first protects choice and reduces the chance that support becomes advice-dumping.",
+        quiz: q(
+          "a peer who feels unheard",
+          "Reflect the feeling and ask what they need before offering resources.",
+          "Give three resources quickly so the meeting feels productive.",
+          "Use listening, reflection, and support without acting as a therapist.",
+          "Interpret the peer's behavior as a clinical symptom and explain it.",
+          "Keep what they share private unless consent or safety policy says otherwise.",
+          "Repeat their frustration to staff right away without asking because staff should know.",
+          "Ask whether they want listening, options, or both.",
+          "Decide they need resources first because feelings can wait."
+        ),
+      }),
+      section("Questions That Open Doors", {
+        description: "Ask questions that invite choice instead of cornering someone.",
+        scene:
+          "A peer missed an appointment and expects a lecture. The old question is, 'Why didn't you go?' The better question might change the whole room.",
+        plainTalk:
+          "Open questions make space. Closed questions have a place, especially for safety and concrete planning, but too many can feel like an interrogation. A good peer question is short, curious, and connected to what the person cares about.",
+        trySaying: [
+          "What got in the way that day?",
+          "What would make the next appointment easier to get to?",
+          "Would it help to practice the call, plan transportation, or leave it alone for today?",
+        ],
+        practice:
+          "Rewrite three 'why didn't you' questions into 'what got in the way' questions.",
+        commonTrap:
+          "The trap is asking questions you already know the answer to because you want the peer to admit your point.",
+        mustKnow:
+          "Questions should support self-discovery and planning, not shame or control.",
+        quiz: q(
+          "asking about a missed appointment",
+          "Ask what got in the way and what support would help next time.",
+          "Ask why they keep sabotaging themselves so they face reality.",
+          "Use questions for peer support and planning, not clinical assessment outside your role.",
+          "Decide the missed appointment proves a diagnosis or lack of motivation.",
+          "Only share appointment details with consent or according to program policy.",
+          "Tell the clinic the peer is noncompliant before talking with the peer.",
+          "Offer choices like practicing a call, planning a ride, or pausing the topic.",
+          "Pick the solution because missing appointments affects the whole team."
+        ),
+      }),
+      section("Plain Language, Not System Soup", {
+        description: "Translate acronyms and paperwork without talking down.",
+        scene:
+          "A benefits letter says the peer must contact a CCO. They stare at it and say, 'I don't even know what language this is.'",
+        plainTalk:
+          "Acronyms can make smart people feel small. CCO means coordinated care organization: the local health plan group that helps manage Oregon Health Plan services. Say the long version once, then say what it does in everyday words. Translation is advocacy.",
+        trySaying: [
+          "That letter is written in system language. Let's turn it into human language.",
+          "A CCO is the group connected to your Oregon Health Plan. They can help with covered services.",
+          "Want to highlight the action step and the deadline together?",
+        ],
+        practice:
+          "Choose one confusing system word and write a one-sentence plain-language translation.",
+        commonTrap:
+          "The trap is using acronyms to sound professional. Peers earn trust by making the room less confusing.",
+        mustKnow:
+          "Explain necessary acronyms once in plain English and check understanding without shaming.",
+        quiz: q(
+          "explaining a confusing benefits letter",
+          "Translate the acronym once, explain the action step, and ask if they want help planning.",
+          "Read the letter faster because the peer needs to learn system terms.",
+          "Help with navigation and plain-language translation without giving legal advice.",
+          "Tell the peer the letter is legally invalid because it seems confusing.",
+          "Handle private benefit details only with the peer's consent and program policy.",
+          "Email the letter to another agency before asking because deadlines matter.",
+          "Ask whether they want to highlight deadlines, make a call, or come back later.",
+          "Take the paperwork home and fix it for them without involving them."
+        ),
+      }),
+      section("Repairing When You Miss", {
+        description: "Own impact quickly when your words land wrong.",
+        scene:
+          "You say, 'At least you're housed now,' and the peer's face closes. You meant encouragement. They heard, 'Stop complaining.'",
+        plainTalk:
+          "Every peer will miss sometimes. Repair is not a speech about your good intentions. It is a short, honest return to respect. Notice the shift, name it without drama, apologize if needed, and ask how to continue.",
+        trySaying: [
+          "I think that landed wrong. I am sorry. I do not want to minimize what you are carrying.",
+          "Let me try again: housed and safe are not the same thing.",
+          "Do you want to keep talking, pause, or switch topics?",
+        ],
+        practice:
+          "Write a repair sentence that does not include the word 'but.'",
+        commonTrap:
+          "The trap is defending your intent until the peer has to take care of your feelings.",
+        mustKnow:
+          "Repair protects trust. Impact matters even when intent was kind.",
+        quiz: q(
+          "a comment that hurt a peer",
+          "Acknowledge the impact, apologize plainly, and ask how they want to continue.",
+          "Explain your good intention until they understand you meant well.",
+          "Repair the relationship while staying in peer support, not therapy.",
+          "Analyze why the peer reacted that way and label it for them.",
+          "Do not share the rupture outside the support team unless consent or policy requires it.",
+          "Tell other peers about the reaction so they know what topics to avoid.",
+          "Offer choices to continue, pause, or switch topics.",
+          "Push through because stopping would make the mistake bigger."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Observe how the helper uses OARS skills and how quickly advice-giving changes the emotional temperature.",
-    scenarioTitle: "Scenario: The peer who shuts down",
-    scenarioPrompt:
-      "Jordan says, 'Everyone keeps telling me what to do. I'm done talking.' Their arms are crossed and they look toward the door.",
-    choices: [
-      { text: "You're being resistant. Let's make a plan anyway.", feedback: "Labels and pressure escalate shutdown.", score: 0 },
-      { text: "It makes sense you'd feel overloaded. We can slow down. What would feel useful, if anything, today?", feedback: "This validates experience, restores choice, and keeps the door open.", score: 100 },
-      { text: "Fine, call me when you're ready to engage.", feedback: "This abandons the relationship without repair.", score: 30 },
-    ],
-    appliedTitle: "Practice log: three OARS responses",
-    appliedPrompt:
-      "Write one open question, one affirmation, one reflection, and one summary for this statement: 'I keep missing appointments because every office feels like another place to fail.'",
-    appliedKind: "documentation",
-    references: [SAMHSA_PEER_SUPPORT, MOTIVATIONAL_INTERVIEWING_NETWORK, ...commonPeerRefs],
-    modes: ["auditory", "reading", "kinesthetic", "reflective"],
-    quizFocus: "active listening and empowerment communication",
+    aiReview: aiReview(
+      [
+        "Reflect feelings and meaning before solving.",
+        "Ask open questions that reduce shame.",
+        "Translate system language into plain words.",
+        "Repair communication misses with humility.",
+      ],
+      [
+        "No interrogation or pressure questions.",
+        "Explain acronyms in everyday language.",
+        "Privacy still applies during team communication.",
+        "Repair focuses on impact, not defending intent.",
+      ],
+      [
+        "Show me a reflection for someone who feels ignored.",
+        "Turn a blaming question into an open question.",
+        "How would you explain a CCO in plain language?",
+        "What would you say after a comment lands badly?",
+        "How do you know when to stop giving information and listen?",
+      ]
+    ),
   },
   {
     slug: "boundaries-ethics",
-    title: "Module 3 - Boundaries, Ethics & Professional Conduct",
-    shortTitle: "Boundaries and ethics",
+    title: "Boundaries and Ethics",
     description:
-      "Navigate dual relationships, confidentiality, gifts, social media, and ethical gray zones.",
+      "Kind limits, dual relationships, confidentiality, ethical choices, and staying trustworthy under real-world pressure.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0140(2)(i)", "950-060-0140(2)(j)", "950-060-0140(2)(l)"],
-    competencies: ["ethics", "boundaries", "confidentiality", "professional-conduct", "hipaa"],
-    hook:
-      "Here's the real talk: being warm does not mean being available in every way.",
-    coreTruth:
-      "Peer ethics center dignity, consent, confidentiality, and non-exploitation. Boundaries protect the relationship from role confusion, favoritism, rescue, and harm.",
-    preservedContent:
-      "Common boundary challenges include running into peers in the community, social media friend requests, transportation and money, romantic or sexual attraction, personal contact information, and small rural communities where dual relationships can be hard to avoid. When dual relationships are unavoidable: disclose, document, consult, and minimize harm.",
-    oregonContext:
-      "Oregon's small towns, recovery communities, tribal communities, and close service networks make boundary work concrete. A peer may also be a neighbor, cousin, group member, or former treatment peer.",
-    keySkills: [
-      "Explain role boundaries kindly and clearly",
-      "Protect confidentiality and minimum necessary information",
-      "Use supervision before ethical gray zones become ethical injuries",
-      "Document boundary issues without shaming the peer",
+    oarReferences: ["OAR 950-060-0140 ethics and boundaries", "OAR 410-180 THW standards"],
+    competencies: ["Ethical decision-making", "Confidentiality", "Boundaries", "Supervision use"],
+    peerNugget:
+      "A boundary is not a wall. It is a handrail that keeps the relationship safe enough to keep going.",
+    references: [...commonPeerRefs, HHS_HIPAA],
+    sections: [
+      section("Warm Boundaries", {
+        description: "Set limits without sounding cold or superior.",
+        scene:
+          "A peer asks for your personal number because weekends are hard. You know the ache of weekends. You also know your program has an on-call line for a reason.",
+        plainTalk:
+          "Warm boundaries tell the truth with care. They protect the peer from depending on one worker, and they protect you from becoming the whole safety plan. The tone matters: not 'I can't deal with you,' but 'I want support to be reliable and safe.'",
+        trySaying: [
+          "I do not use my personal phone for work, and I do want you supported this weekend.",
+          "Let's put the on-call number and two other supports in your plan.",
+          "I care about this. The boundary helps me show up consistently.",
+        ],
+        practice:
+          "Practice one boundary sentence with a warm opening and a clear limit.",
+        commonTrap:
+          "The trap is making exceptions because the peer is struggling. Exceptions can quietly become promises you cannot keep.",
+        mustKnow:
+          "Boundaries protect trust, safety, and consistency. They are part of care.",
+        quiz: q(
+          "a request for your personal phone number",
+          "Kindly decline, explain the work boundary, and help identify approved supports.",
+          "Give the number just this once because weekends are hard.",
+          "Provide peer support within program policy and use approved contact channels.",
+          "Become the peer's personal crisis contact outside the program.",
+          "Keep contact information and support plans private according to policy.",
+          "Share the peer's weekend fears with a friend so someone else knows.",
+          "Offer choices from approved supports and ask what feels usable.",
+          "Tell them the boundary means they need to stop reaching out."
+        ),
+      }),
+      section("Confidentiality in Real Life", {
+        description: "Understand privacy, consent, and safety limits in plain language.",
+        scene:
+          "At the grocery store, someone says loudly, 'Hey, aren't you working with my cousin at that recovery place?' People are listening.",
+        plainTalk:
+          "Confidentiality means people control their story as much as the law and safety allow. HIPAA is a federal privacy law for health information; in plain English, it means protected information cannot be casually shared. Your employer will teach local rules, releases of information, and exceptions.",
+        trySaying: [
+          "Good to see you. I keep work private, so I cannot talk about who I may know from there.",
+          "If your cousin wants support, they can contact the program directly.",
+          "Let's talk somewhere private if you have a general resource question.",
+        ],
+        practice:
+          "Write a grocery-store privacy response you could say without sounding robotic.",
+        commonTrap:
+          "The trap is confirming a connection because the person already seems to know. Confirmation is still sharing.",
+        mustKnow:
+          "Do not confirm, deny, or discuss someone's participation unless consent, role, and policy allow it.",
+        quiz: q(
+          "a public question about another participant",
+          "Protect privacy and avoid confirming whether you know or work with that person.",
+          "Confirm only if the person asking is family.",
+          "Follow privacy law and employer policy while staying warm.",
+          "Share basic participation details because no diagnosis is mentioned.",
+          "Use releases and safety exceptions exactly as policy requires.",
+          "Text a coworker the story with names because it happened off site.",
+          "Offer a general way to contact the program without discussing the person.",
+          "Answer quickly in public so the question does not become awkward."
+        ),
+      }),
+      section("Dual Relationships and Small Towns", {
+        description: "Navigate overlap when community life is connected.",
+        scene:
+          "You walk into a birthday party and see a peer from your program helping with the cake. They look as surprised as you feel.",
+        plainTalk:
+          "Dual relationships happen when the peer relationship overlaps with another role: neighbor, cousin's friend, meeting member, volunteer, social media contact, or community elder. Overlap is not always wrong, especially in small towns and cultural communities. The ethical move is transparency, supervision, and choice.",
+        trySaying: [
+          "Looks like our worlds overlap here. I will follow your lead about saying hello in public.",
+          "We can talk with my supervisor about how to keep support comfortable and private.",
+          "If this feels too close, we can look at another peer option.",
+        ],
+        practice:
+          "Name three places your community roles might overlap and what you would bring to supervision.",
+        commonTrap:
+          "The trap is pretending overlap does not matter because nobody means harm. Unspoken overlap can pressure the peer.",
+        mustKnow:
+          "Dual relationships require transparency, supervision, and attention to the peer's choice and privacy.",
+        quiz: q(
+          "running into a peer in community",
+          "Let the peer lead public contact and consult supervision about the overlap.",
+          "Act like close friends so nobody feels awkward.",
+          "Use supervision and program policy to manage overlap without abandoning peer support.",
+          "Make private arrangements that the program does not know about.",
+          "Do not reveal the peer's program connection in public.",
+          "Post a party photo tagging the peer because the event was not work.",
+          "Offer options if the overlap changes their comfort with services.",
+          "Tell them they must keep working with you because rural communities are small."
+        ),
+      }),
+      section("Ethical Gut Checks", {
+        description: "Use supervision before a messy choice becomes a messy secret.",
+        scene:
+          "A peer offers you handmade jewelry as thanks. It is beautiful, and refusing feels rude. You are not sure what the policy says.",
+        plainTalk:
+          "Ethics is not only the huge dramatic stuff. It is the little moments where power, gratitude, money, privacy, attraction, culture, and pressure mix together. A gut check is a pause: What is the policy? What could this mean to the peer? What would I write in a note? What would I bring to supervision?",
+        trySaying: [
+          "This means a lot. I need to check our gift policy so I handle it respectfully.",
+          "Your thanks matters to me. I want to keep our support clear and fair.",
+          "Can we talk about another way to mark this win?",
+        ],
+        practice:
+          "Create a four-question ethics pause card for your future desk or backpack.",
+        commonTrap:
+          "The trap is hiding small things because they seem too awkward to ask about. Hidden awkward things grow teeth.",
+        mustKnow:
+          "When unsure, pause, follow policy, document as required, and use supervision.",
+        quiz: q(
+          "an uncertain gift or favor",
+          "Thank them, pause, check policy, and use supervision before accepting.",
+          "Accept quietly because refusing might harm rapport.",
+          "Use policy, documentation, and supervision to keep the peer relationship ethical.",
+          "Trade gifts or favors for extra support time.",
+          "Discuss the situation only with people who have a work need to know.",
+          "Ask another peer what they think using the person's name.",
+          "Offer another way to celebrate the win if the gift is not allowed.",
+          "Decide for the peer that a boundary would hurt their feelings too much."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Watch for moments where friendliness could blur into role confusion, and note how the helper repairs it.",
-    scenarioTitle: "Scenario: The gift and the ride home",
-    scenarioPrompt:
-      "A peer offers you $40 and asks for a ride home after a hard meeting. You live nearby and want to help.",
-    choices: [
-      { text: "Take the money and give the ride because it is practical.", feedback: "Money creates obligation and role confusion.", score: 10 },
-      { text: "Decline money, explore safer transport options, and consult supervisor about ride policies.", feedback: "This protects the relationship, follows policy, and keeps autonomy.", score: 100 },
-      { text: "Post about it online asking what others would do, with enough details for context.", feedback: "This breaches confidentiality and professional conduct.", score: 0 },
-    ],
-    appliedTitle: "Documentation: boundary consultation note",
-    appliedPrompt:
-      "Draft a brief, respectful consultation note about a peer asking for your personal phone number and weekend hangouts. Include what was requested, how you responded, and what you will bring to supervision.",
-    appliedKind: "documentation",
-    references: [HHS_HIPAA, ...commonPeerRefs],
-    modes: ["reading", "kinesthetic", "reflective"],
-    quizFocus: "ethics, boundaries, confidentiality, and professional conduct",
+    aiReview: aiReview(
+      [
+        "Set warm, clear boundaries.",
+        "Explain confidentiality and safety limits plainly.",
+        "Handle dual relationships with supervision.",
+        "Use ethical pauses before acting.",
+      ],
+      [
+        "No casual sharing of peer information.",
+        "Use approved contact channels.",
+        "Dual relationships are named and supervised.",
+        "Policy and supervision are strengths, not punishments.",
+      ],
+      [
+        "How would you set a phone boundary warmly?",
+        "What would you say if someone asks about a peer in public?",
+        "What makes dual relationships tricky in small communities?",
+        "Walk me through an ethics gut check.",
+        "How can a boundary show care?",
+      ]
+    ),
   },
   {
     slug: "trauma-informed",
-    title: "Module 4 - Trauma-Informed Care",
-    shortTitle: "Trauma-informed care",
+    title: "Trauma-Informed Peer Support",
     description:
-      "Understand trauma impacts, minimize re-traumatization, and practice safety, trust, choice, collaboration, and empowerment.",
+      "Safety, choice, collaboration, cultural humility, and practical support for nervous systems under stress.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0140(2)(o)"],
-    competencies: ["trauma-informed-care", "safety", "choice", "re-traumatization-prevention"],
-    hook:
-      "Here's the real talk: trauma-informed care is not a poster; it is how your pace, doorway, voice, and paperwork feel to someone with a nervous system on alert.",
-    coreTruth:
-      "Trauma-informed peer practice asks, 'What happened to you?' and 'What helps you feel safer right now?' rather than 'What is wrong with you?' It avoids forced disclosure and keeps choice visible.",
-    preservedContent:
-      "The principles include safety, trustworthiness and transparency, peer support and mutuality, collaboration, empowerment, voice and choice, and cultural, historical, and gender humility. Peers are not trauma therapists; they support regulation, connection, and pathways to appropriate care.",
-    oregonContext:
-      "Many Oregon peers carry trauma related to institutions, racism, forced treatment, houselessness, incarceration, family separation, violence, or medical harm. Services can retraumatize when they surprise, shame, corner, or rush people.",
-    keySkills: [
-      "Ask permission before sensitive topics",
-      "Offer predictable structure and choices",
-      "Avoid arguing with protective responses like shutdown or anger",
-      "Support grounding while staying in peer scope",
+    oarReferences: ["OAR 950-060-0140 trauma-informed care", "OAR 410-180 THW standards"],
+    competencies: ["Trauma-informed practice", "Choice", "Grounding", "Cultural humility"],
+    peerNugget:
+      "Trauma-informed support asks, 'What helps safety show up here?' instead of 'What is wrong with you?'",
+    references: [...commonPeerRefs, SAMHSA_TRAUMA],
+    sections: [
+      section("Safety Is More Than No Danger", {
+        description: "Notice emotional, cultural, physical, and relational safety.",
+        scene:
+          "The room is technically safe, but the peer keeps looking at the door. The chair blocks their exit, the lights buzz, and every question sounds like an intake.",
+        plainTalk:
+          "Safety is felt in the body before it is explained in words. A trauma-informed peer does not demand trust. You offer choices that let the person regain a little control: where to sit, whether the door stays open, whether to take a break, whether to write instead of talk.",
+        trySaying: [
+          "Where would you like to sit so this feels a little easier?",
+          "We can pause, step outside, or keep going slowly.",
+          "You do not have to tell the whole story for me to support you.",
+        ],
+        practice:
+          "Look at a meeting space and list five small choices that could increase safety.",
+        commonTrap:
+          "The trap is assuming safety because the program says it is safe. The peer's body may have different information.",
+        mustKnow:
+          "Trauma-informed practice offers choice, predictability, and respect for the person's pace.",
+        quiz: q(
+          "a peer scanning the room and seeming tense",
+          "Offer choices about seating, pace, and breaks without demanding details.",
+          "Ask for the trauma story so you know how to help.",
+          "Support felt safety without providing trauma therapy.",
+          "Interpret their body language as a diagnosis.",
+          "Protect privacy and avoid asking for unnecessary trauma details.",
+          "Share the story with staff who are curious but not involved.",
+          "Let the peer choose whether to pause, move, write, or continue.",
+          "Tell them the room is safe and they need to relax."
+        ),
+      }),
+      section("Triggers, Glimmers, and Grounding", {
+        description: "Help people notice stress signals and return to the present.",
+        scene:
+          "A door slams in the hallway. The peer freezes, then laughs it off: 'I'm fine.' Their hands are shaking.",
+        plainTalk:
+          "A trigger is something that cues danger in the nervous system. A glimmer is the opposite: a small cue of safety, connection, or relief. Grounding helps someone orient to now. You are not doing therapy; you are offering simple, consent-based support in the moment.",
+        trySaying: [
+          "That sound hit hard. Want to take a second and notice the room with me?",
+          "Would cold water, feet on the floor, or stepping outside help?",
+          "What is one small thing here that tells your body this is today?",
+        ],
+        practice:
+          "Try three grounding options yourself and notice which one feels respectful, not cheesy.",
+        commonTrap:
+          "The trap is forcing a grounding tool because it worked for you. Choice matters even with coping skills.",
+        mustKnow:
+          "Grounding is offered with consent and kept simple; crisis or clinical needs are routed to appropriate help.",
+        quiz: q(
+          "a peer startled by a loud sound",
+          "Name what you noticed gently and offer simple grounding choices.",
+          "Insist they use your favorite breathing exercise until calm.",
+          "Offer peer-level grounding and route clinical or crisis needs appropriately.",
+          "Process the trauma memory in detail to reduce the trigger.",
+          "Share only what is needed for safety or support according to policy.",
+          "Tell nearby people exactly why the peer reacted.",
+          "Offer options like water, feet on floor, stepping out, or stopping.",
+          "Decide grounding is required before the peer can leave."
+        ),
+      }),
+      section("Power, Choice, and Collaboration", {
+        description: "Reduce the power-over feeling that systems often create.",
+        scene:
+          "A peer says, 'If I say no, will it go in my chart?' That question is about more than paperwork. It is about power.",
+        plainTalk:
+          "Trauma often teaches people that saying no is dangerous. Systems can accidentally repeat that lesson. Peer support interrupts it by being clear: what is optional, what is required, what gets documented, and what choices the person still has.",
+        trySaying: [
+          "You can say no to this conversation. I can explain what I do and do not document.",
+          "Here is what is required today, and here is where you still have choices.",
+          "Would you like to decide the order we tackle these two things?",
+        ],
+        practice:
+          "Take a common program requirement and write a choice-centered explanation of it.",
+        commonTrap:
+          "The trap is hiding requirements to seem nice. Surprise rules do not build trust.",
+        mustKnow:
+          "Choice includes honest information about limits, requirements, documentation, and safety exceptions.",
+        quiz: q(
+          "a peer worried that saying no will be punished",
+          "Explain what is optional, what is required, and what documentation means.",
+          "Say everything is optional even when the program has requirements.",
+          "Clarify peer support and documentation limits without legal or clinical advice.",
+          "Threaten discharge to encourage cooperation.",
+          "Be transparent about what information is recorded and who can see it.",
+          "Hide documentation details because they might make the peer anxious.",
+          "Offer choices about order, pace, and how to participate where possible.",
+          "Remove choices because requirements are already stressful."
+        ),
+      }),
+      section("Trauma-Informed Is Also Culture-Informed", {
+        description: "Respect that safety, healing, family, and authority mean different things across cultures.",
+        scene:
+          "You suggest a grounding exercise and the peer says, 'That is not how my family handles things.' This is not resistance. It is information.",
+        plainTalk:
+          "Culture shapes what feels respectful, what feels private, who gets included, how eye contact lands, and what healing looks like. Trauma-informed peer support does not make one coping style the standard. It asks, learns, and makes room.",
+        trySaying: [
+          "What does support usually look like in your family or community?",
+          "Is there anyone you want included, or anyone you do not want involved?",
+          "That tool may not fit. What has helped in your world?",
+        ],
+        practice:
+          "Write two questions that invite culture without asking the peer to teach a whole class.",
+        commonTrap:
+          "The trap is calling something 'avoidance' when it may be privacy, culture, faith, disability access, or survival wisdom.",
+        mustKnow:
+          "Trauma-informed support honors culture and avoids forcing one definition of healing.",
+        quiz: q(
+          "a coping tool that does not fit the peer's culture",
+          "Ask what support looks like in their world and adapt with consent.",
+          "Explain that evidence-based tools work the same for everyone.",
+          "Offer peer support that respects culture without claiming clinical expertise.",
+          "Decide their cultural response is a symptom that needs correction.",
+          "Ask consent before involving family, community, or spiritual supports.",
+          "Call family members because culture probably values family involvement.",
+          "Offer choices and let the peer decide what fits.",
+          "Require the standard tool so everyone gets equal service."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Look for environmental and relational cues: doors, seating, surprise touch, jargon, and how the helper explains choices.",
-    scenarioTitle: "Scenario: Safety in the room",
-    scenarioPrompt:
-      "A peer sits with their back to the wall and flinches when someone knocks. You need to complete an intake-oriented conversation for your program.",
-    choices: [
-      { text: "Tell them the form is required and move quickly through every question.", feedback: "This prioritizes paperwork over safety and choice.", score: 20 },
-      { text: "Name the interruption, ask what would feel safer, explain what is required, and offer pacing choices.", feedback: "This increases transparency, safety, and collaboration.", score: 100 },
-      { text: "Ask for detailed trauma history so you understand the flinch.", feedback: "Peers should not force disclosure; details may not be needed.", score: 25 },
-    ],
-    appliedTitle: "Reflection: making safety visible",
-    appliedPrompt:
-      "Describe three concrete ways you will make a first meeting feel safer for someone with a trauma history: environment, language, and pacing.",
-    appliedKind: "reflection",
-    references: [SAMHSA_TRAUMA, ...commonPeerRefs],
-    modes: ["story", "reading", "reflective"],
-    quizFocus: "trauma-informed safety, choice, collaboration, and empowerment",
+    aiReview: aiReview(
+      [
+        "Describe trauma-informed support in plain language.",
+        "Offer grounding and safety choices with consent.",
+        "Explain power, documentation, and requirements honestly.",
+        "Connect trauma-informed practice with culture and humility.",
+      ],
+      [
+        "Do not ask for trauma details you do not need.",
+        "Grounding is optional and consent-based.",
+        "Safety concerns route to policy and qualified help.",
+        "Culture shapes what support feels safe.",
+      ],
+      [
+        "How would you make a meeting room feel safer?",
+        "What is a grounding choice you could offer without forcing it?",
+        "How do you explain required documentation honestly?",
+        "What would you do if your coping idea does not fit someone's culture?",
+        "What does trauma-informed peer voice sound like?",
+      ]
+    ),
   },
   {
     slug: "crisis-safety",
-    title: "Module 5 - Crisis Identification & Safety",
-    shortTitle: "Crisis and safety",
+    title: "Crisis and Safety",
     description:
-      "Recognize suicide risk, overdose/intoxication, psychiatric crisis, and practice safety planning within peer scope.",
+      "Recognize warning signs, relate without panic, route to the right help, and keep peer scope clear during hard moments.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0140(2)(k)"],
-    competencies: ["suicide-awareness", "overdose-response", "crisis-identification", "safety-planning", "narcan-awareness"],
-    hook:
-      "Here's the real talk: calm peer presence matters in crisis, and so does knowing when presence is not enough.",
-    coreTruth:
-      "Peers often meet people in the hardest hours. The role is recognize, relate, and route: stay connected, ask direct safety questions when concerned, and follow crisis protocols when acute danger is present.",
-    preservedContent:
-      "Crisis domains include suicidal ideation and planning, overdose or intoxication emergencies, psychiatric crisis including psychosis-related distress, and interpersonal violence or immediate safety. Actions include staying calm, asking directly about suicide, knowing 988 and local crisis lines, supporting safety planning, and calling emergency services/use naloxone if trained and available for overdose.",
-    oregonContext:
-      "Oregon crisis response varies by county, mobile team availability, tribal and rural access, and organizational policy. Students must know 988, Lines for Life, employer on-call protocols, and local emergency pathways.",
-    keySkills: [
-      "Ask directly and compassionately about suicide when indicators appear",
-      "Avoid secrecy promises about imminent harm",
-      "Support safety planning without replacing crisis clinicians",
-      "Recognize overdose warning signs and naloxone basics",
+    oarReferences: ["OAR 950-060-0140 crisis support", "OAR 410-180 THW standards"],
+    competencies: ["Crisis recognition", "Safety planning", "Warm handoffs", "Scope under pressure"],
+    peerNugget:
+      "Crisis work for peers is recognize, relate, and route. We stay human while using the safety plan.",
+    references: [...commonPeerRefs, LIFELINE_988, LINES_FOR_LIFE],
+    sections: [
+      section("Recognize When Safety Is in the Room", {
+        description: "Notice warning signs without turning every hard feeling into a crisis.",
+        scene:
+          "A peer says, 'I am done. I cannot do this again.' They stare at the floor. You feel your stomach drop.",
+        plainTalk:
+          "Peers do not diagnose crisis. We recognize possible danger and respond according to training and employer policy. Hard feelings deserve care; immediate danger needs routing. The skill is staying calm enough to ask direct, respectful questions and bring in the right support.",
+        trySaying: [
+          "When you say you are done, are you thinking about killing yourself today?",
+          "Thank you for telling me. I am going to stay with you and use our safety steps.",
+          "We do not have to handle this alone.",
+        ],
+        practice:
+          "Say the direct safety question out loud until it sounds caring, not dramatic.",
+        commonTrap:
+          "The trap is avoiding direct questions because you fear putting the idea in someone's head. Clear questions can create safety.",
+        mustKnow:
+          "Ask direct safety questions when warning signs appear and follow employer crisis protocol.",
+        quiz: q(
+          "a peer saying they are done",
+          "Ask a direct safety question calmly and follow the crisis protocol.",
+          "Avoid the suicide question because it might make things worse.",
+          "Recognize possible crisis and route to trained crisis support; do not provide clinical assessment.",
+          "Decide whether they are serious based on your gut alone.",
+          "Share information needed for immediate safety according to policy.",
+          "Keep everything secret even if there is immediate danger.",
+          "Explain the safety steps and involve the peer as much as possible.",
+          "Take control without telling the peer what is happening."
+        ),
+      }),
+      section("Relate Without Panicking", {
+        description: "Stay connected while safety steps are moving.",
+        scene:
+          "While waiting for crisis support, the peer says, 'Now you think I’m crazy too.' Your face, voice, and words matter.",
+        plainTalk:
+          "Relating in crisis is not a motivational speech. It is grounded presence. You can validate pain, reduce shame, and keep the next step visible. You also avoid making the crisis about your fear, your story, or your need to fix it.",
+        trySaying: [
+          "I do not think you are crazy. I think you are in a lot of pain and deserve support.",
+          "I am here with you while we get the next right help involved.",
+          "Would it help to sit quietly, get water, or call your support person with consent?",
+        ],
+        practice:
+          "Practice a calm crisis voice: slower than usual, warm, and honest.",
+        commonTrap:
+          "The trap is over-sharing your own crisis story to prove you understand. In crisis, keep the spotlight on safety.",
+        mustKnow:
+          "Connection reduces shame, but safety protocol still moves forward.",
+        quiz: q(
+          "waiting for crisis support",
+          "Validate the pain, reduce shame, and keep safety steps clear.",
+          "Tell a detailed story about your own crisis so they feel less alone.",
+          "Stay in peer support while crisis professionals or protocol handle assessment and intervention.",
+          "Promise there will be no consequences if they stay calm.",
+          "Share only what is needed for safety and continuity of care.",
+          "Update friends or family without consent unless policy requires it for safety.",
+          "Offer small choices like water, quiet, support person, or where to sit.",
+          "Remove all choices because crisis means the peer has no voice."
+        ),
+      }),
+      section("Warm Handoffs and 988", {
+        description: "Route to crisis supports without dropping the person emotionally.",
+        scene:
+          "The plan says to call 988, the Suicide and Crisis Lifeline. The peer says, 'I hate hotlines. They never get me.'",
+        plainTalk:
+          "A warm handoff means you do not toss a number and disappear. With consent and policy, you can sit with someone while they call, help explain what to expect, or connect to a local crisis option. 988 is a national call, text, and chat line for suicide and crisis support; your employer may also have local steps.",
+        trySaying: [
+          "988 is one option. We can call together, text, or use the program crisis plan.",
+          "I can stay with you while we connect, within our policy.",
+          "What would make this handoff feel less awful?",
+        ],
+        practice:
+          "Write a 30-second plain-language explanation of 988 and your local crisis protocol placeholder.",
+        commonTrap:
+          "The trap is treating a referral like the end of your responsibility. The handoff should feel like a bridge, not a shove.",
+        mustKnow:
+          "Use 988 and local crisis resources according to employer policy; AI roleplay is never real crisis support.",
+        quiz: q(
+          "connecting someone to 988 or local crisis support",
+          "Explain options and make a warm handoff according to policy.",
+          "Hand them a number and leave because crisis is no longer peer work.",
+          "Route crisis support to trained resources while staying in a peer support role.",
+          "Act as the crisis clinician if the peer trusts you more.",
+          "Share safety information allowed or required by policy during the handoff.",
+          "Promise the hotline the peer will do whatever they recommend.",
+          "Ask whether calling, texting, local crisis, or a support person feels possible.",
+          "Choose the route without explaining because faster is always safer."
+        ),
+      }),
+      section("After the Crisis Moment", {
+        description: "Debrief, document, and care for yourself after hard safety work.",
+        scene:
+          "The immediate danger has passed. Your hands are shaky now. The peer is embarrassed. Staff are asking what happened.",
+        plainTalk:
+          "After a crisis, the work is not over. The peer may need reassurance that they are not in trouble for telling the truth. The team may need clear, factual documentation. You may need supervision, grounding, and support. Strong peers do not pretend crisis work leaves no mark.",
+        trySaying: [
+          "I am glad you told me. You did not do anything wrong by asking for help.",
+          "I need to document the safety steps we used, and I can explain what that means.",
+          "I am going to debrief with my supervisor so I keep showing up well.",
+        ],
+        practice:
+          "Write a factual three-line crisis note: concern stated, safety steps used, handoff completed.",
+        commonTrap:
+          "The trap is processing your adrenaline with the peer. Use supervision for your feelings so the peer does not have to carry them.",
+        mustKnow:
+          "Document factual safety actions and debrief with supervision; do not make AI practice or peer support a substitute for real protocols.",
+        quiz: q(
+          "the time after a crisis handoff",
+          "Reassure the peer, document facts, and debrief with supervision.",
+          "Avoid documentation because the peer might feel judged.",
+          "Document peer observations and actions within policy, not clinical conclusions.",
+          "Write a diagnosis to justify why crisis steps were used.",
+          "Share safety information only with those allowed or required by policy.",
+          "Tell another peer the story to release stress.",
+          "Explain what documentation means and invite the peer's questions when appropriate.",
+          "Skip debriefing because strong peers should be unaffected."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Observe how direct questions can be compassionate rather than alarming, and how helpers explain confidentiality limits.",
-    scenarioTitle: "Scenario: Tonight feels dangerous",
-    scenarioPrompt:
-      "Sam says, 'I don't want to be here tomorrow.' When gently asked, they mention pills at home and a plan for tonight.",
-    choices: [
-      { text: "Promise not to tell anyone so they keep trusting you.", feedback: "Imminent harm is a confidentiality limit; do not promise secrecy.", score: 0 },
-      { text: "Stay with them, ask direct follow-up questions, and follow your crisis escalation protocol collaboratively.", feedback: "This balances relationship, safety, and scope.", score: 100 },
-      { text: "Change the subject to positive thinking.", feedback: "Avoidance misses urgent risk.", score: 10 },
-    ],
-    appliedTitle: "Required roleplay: crisis routing practice",
-    appliedPrompt:
-      "Complete an AI Practice Lab session focused on suicidal ideation or overdose response. Practice direct inquiry, calm tone, safety steps, and debrief what you would document.",
-    appliedKind: "roleplay",
-    references: [LIFELINE_988, LINES_FOR_LIFE, ...commonPeerRefs],
-    modes: ["auditory", "kinesthetic", "reflective"],
-    quizFocus: "crisis recognition, suicide inquiry, overdose awareness, and safety protocols",
+    aiReview: aiReview(
+      [
+        "Ask direct safety questions when needed.",
+        "Stay connected while following crisis protocol.",
+        "Explain warm handoffs, including 988, in plain language.",
+        "Document and debrief after safety events.",
+      ],
+      [
+        "Crisis equals recognize, relate, route.",
+        "No peer diagnosis or clinical risk assessment.",
+        "Use employer policy and real crisis resources.",
+        "AI practice is not emergency support.",
+      ],
+      [
+        "How would you ask a direct suicide safety question?",
+        "What do you say while waiting for crisis support?",
+        "Explain 988 to someone who distrusts hotlines.",
+        "What belongs in a factual crisis note?",
+        "How do you care for yourself without making the peer care for you?",
+      ]
+    ),
   },
   {
     slug: "culture-advocacy",
-    title: "Module 6 - Cultural Humility & Advocacy",
-    shortTitle: "Culture and advocacy",
+    title: "Culture and Advocacy",
     description:
-      "Practice cultural humility, cross-cultural relationships, and advocacy without saviorism.",
+      "Cultural humility, identity safety, respectful advocacy, language access, and challenging systems without speaking over peers.",
     estimatedHours: 3,
-    oarReferences: ["950-060-0140(2)(e)", "950-060-0140(2)(h)", "950-060-0140(2)(a)"],
-    competencies: ["cultural-humility", "advocacy", "community-engagement", "anti-oppression"],
-    hook:
-      "Here's the real talk: cultural humility starts when you stop treating your assumptions like facts.",
-    coreTruth:
-      "Cultural humility is lifelong learning, self-critique, and redressing power imbalances. Advocacy means standing with people, not speaking over them because the system makes you angry too.",
-    preservedContent:
-      "Practice includes asking how someone identifies and what matters in their healing, noticing assumptions about family, religion, gender, disability, recovery pathways, and advocating with people rather than over them. Oregon communities include tribal nations, immigrant communities, rural towns, LGBTQ+ peers, Deaf community, veterans, and many more.",
-    oregonContext:
-      "Oregon's history includes colonization, exclusion laws, institutional racism, rural/urban divides, and culturally specific resilience. Peer workers should know local communities without claiming mastery over anyone's identity.",
-    keySkills: [
-      "Ask identity and preference questions without making the peer educate you on everything",
-      "Use advocacy that keeps the peer's voice in front",
-      "Notice power differences in systems meetings",
-      "Connect to culturally specific and community-led resources when desired",
+    oarReferences: ["OAR 950-060-0140 culturally responsive services", "OAR 410-180 THW standards"],
+    competencies: ["Cultural humility", "Advocacy", "Language access", "Anti-stigma practice"],
+    peerNugget:
+      "Advocacy is not grabbing the microphone. It is helping the peer's voice carry farther.",
+    references: [...commonPeerRefs, OREGON_211],
+    sections: [
+      section("Culture Is Not a Checklist", {
+        description: "Approach identity with humility and curiosity.",
+        scene:
+          "A peer says, 'People keep asking about my culture like it is a worksheet.' They are tired before the conversation starts.",
+        plainTalk:
+          "Culture can include race, tribe, language, faith, disability, gender, sexuality, family roles, recovery community, immigration story, rural identity, class, and more. Cultural humility means you do not assume you know the meaning of any of it. You ask what matters here, today, for this person.",
+        trySaying: [
+          "What parts of your identity should I keep in mind so support feels respectful?",
+          "I do not want to assume. What should I know about what matters to you?",
+          "If I miss something, I want you to be able to tell me.",
+        ],
+        practice:
+          "Write one curiosity question that is respectful and one that asks someone to educate you too much.",
+        commonTrap:
+          "The trap is treating culture as a fact sheet instead of a living relationship.",
+        mustKnow:
+          "Cultural humility means asking, listening, repairing, and adapting without stereotyping.",
+        quiz: q(
+          "asking about identity and culture",
+          "Ask what matters to the peer and avoid assumptions.",
+          "Use a cultural checklist so you do not miss anything.",
+          "Offer culturally responsive peer support without claiming expertise in the peer's identity.",
+          "Explain what their culture probably means based on a training you took.",
+          "Keep identity information private unless consent or safety policy applies.",
+          "Share identity details with the team because culture is relevant to everyone.",
+          "Invite the peer to name what respectful support looks like.",
+          "Assume people from the same group want the same support."
+        ),
+      }),
+      section("Language Access Is Respect", {
+        description: "Use interpreters and accessible communication instead of winging it.",
+        scene:
+          "A peer's auntie is translating during a housing call. The peer looks uncomfortable, but everyone is moving fast.",
+        plainTalk:
+          "Language access is not a favor. It is part of meaningful choice. Family interpreters can be helpful in some moments, but they can also create pressure or privacy problems. Use qualified interpreters and accessible formats according to policy whenever important decisions, rights, safety, or benefits are involved.",
+        trySaying: [
+          "Would you like a trained interpreter for this call?",
+          "You deserve to get this information in the language and format that works for you.",
+          "Family can support you, but they do not have to carry private translation if you do not want that.",
+        ],
+        practice:
+          "Find where your program keeps interpreter access steps and write them in plain language.",
+        commonTrap:
+          "The trap is using whoever is nearby to translate because it seems faster. Fast can become unfair.",
+        mustKnow:
+          "Offer language access and accessible formats, especially for rights, benefits, health, safety, and consent.",
+        quiz: q(
+          "a family member translating a benefits call",
+          "Offer a qualified interpreter and ask what the peer wants.",
+          "Continue with the family interpreter because they already started.",
+          "Support access and advocacy without giving legal advice about benefits.",
+          "Tell the agency the family interpreter is legally required.",
+          "Protect privacy by using consent and appropriate interpreter processes.",
+          "Discuss private details through family because they care.",
+          "Let the peer choose family support, trained interpreter, or another accessible format when possible.",
+          "Decide language access is too slow for urgent paperwork."
+        ),
+      }),
+      section("Advocacy With, Not Over", {
+        description: "Help systems hear the peer without taking their voice.",
+        scene:
+          "At a team meeting, the peer starts to explain what they need. A provider interrupts. Everyone looks at you because you are the peer worker.",
+        plainTalk:
+          "Advocacy can be quiet and powerful. Sometimes it is asking, 'Can we let Jordan finish?' Sometimes it is helping the peer prepare notes before the meeting. Sometimes it is asking permission before you add context. The goal is not to be the hero. The goal is more room for the peer's own voice.",
+        trySaying: [
+          "Jordan, do you want to finish your thought?",
+          "Would it help if I shared what we practiced, or do you want to say it?",
+          "Can we pause and make sure the plan matches what Jordan asked for?",
+        ],
+        practice:
+          "Write one advocacy sentence for before, during, and after a meeting.",
+        commonTrap:
+          "The trap is speaking beautifully about the peer while the peer sits silent.",
+        mustKnow:
+          "Advocacy should be consent-based and strengthen the peer's voice, not replace it.",
+        quiz: q(
+          "a peer being interrupted in a meeting",
+          "Invite the peer to continue and ask permission before adding your voice.",
+          "Take over the explanation because you can make the point clearly.",
+          "Advocate with consent while staying in the peer role.",
+          "Give clinical recommendations to make the team listen.",
+          "Share only information the peer agreed to share or policy requires.",
+          "Reveal private context to prove the peer deserves help.",
+          "Offer the peer options for speaking, having you support, or pausing.",
+          "Decide advocacy means you should always speak first."
+        ),
+      }),
+      section("Bias, Stigma, and Micro-Repairs", {
+        description: "Respond to harm without turning every moment into a courtroom.",
+        scene:
+          "Someone calls a peer 'noncompliant' in a huddle. You see the peer's shoulders drop.",
+        plainTalk:
+          "Stigma often hides in everyday words. A peer worker can interrupt with respect and clarity. You do not have to shame the staff person to protect the peer. You can translate toward dignity: 'Could we say the plan is not working for them right now?'",
+        trySaying: [
+          "Can we use language that keeps the person in the center?",
+          "I heard the peer say transportation was the barrier, not that they do not care.",
+          "What would change if we called this a support need instead of noncompliance?",
+        ],
+        practice:
+          "Replace five stigmatizing labels with person-centered, plain-language alternatives.",
+        commonTrap:
+          "The trap is staying silent because you do not want team tension. Silence can feel like agreement to the peer.",
+        mustKnow:
+          "Challenge stigma in ways that protect dignity, facts, and the peer relationship.",
+        quiz: q(
+          "stigmatizing language in a huddle",
+          "Redirect to person-centered language and the actual barrier.",
+          "Stay silent because huddles are not the place for advocacy.",
+          "Use peer advocacy and facts without making clinical judgments.",
+          "Diagnose staff bias and confront them in front of everyone.",
+          "Protect the peer's private details while challenging stigma.",
+          "Share extra personal history so the team feels compassion.",
+          "Ask how the plan can better match the peer's stated barrier.",
+          "Use shame so the team learns faster."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Notice when helpers ask, assume, interrupt, translate jargon, or invite the peer to lead advocacy decisions.",
-    scenarioTitle: "Scenario: Clinic front desk",
-    scenarioPrompt:
-      "Your peer is dismissed rudely at a clinic desk and wants to leave forever. They ask you to do something.",
-    choices: [
-      { text: "Yell at the receptionist for them.", feedback: "This may escalate and center you instead of the peer's agency.", score: 20 },
-      { text: "Validate, ask what support they want, and follow their lead on speaking up, requesting a supervisor, rescheduling, or filing feedback.", feedback: "Collaborative advocacy preserves dignity and choice.", score: 100 },
-      { text: "Tell them to toughen up because systems are always like this.", feedback: "This minimizes harm and models hopelessness.", score: 0 },
-    ],
-    appliedTitle: "Reflection: advocacy without taking over",
-    appliedPrompt:
-      "Write about a time you wanted someone to advocate with you. What helped? What felt controlling? Translate that lesson into three advocacy commitments for peer work.",
-    appliedKind: "reflection",
-    references: [SAMHSA_PEER_SUPPORT, OREGON_211, ...commonPeerRefs],
-    modes: ["story", "reading", "reflective"],
-    quizFocus: "cultural humility, advocacy, and community engagement",
+    aiReview: aiReview(
+      [
+        "Practice cultural humility without stereotyping.",
+        "Explain why language access matters.",
+        "Advocate with consent and peer voice.",
+        "Interrupt stigma with dignity.",
+      ],
+      [
+        "Do not assume culture from identity labels.",
+        "Use qualified interpreter/access processes when needed.",
+        "Advocacy must not speak over the peer.",
+        "Protect privacy during advocacy.",
+      ],
+      [
+        "Ask a respectful culture question.",
+        "How would you offer an interpreter?",
+        "What would you say if a peer is interrupted?",
+        "Replace 'noncompliant' with peer-centered language.",
+        "How do you challenge bias without making the peer carry the moment?",
+      ]
+    ),
   },
   {
     slug: "motivational-interviewing",
-    title: "Module 7 - Motivational Interviewing Basics",
-    shortTitle: "Motivational interviewing",
+    title: "Motivational Interviewing for Peers",
     description:
-      "Learn MI spirit and core skills: partnership, acceptance, compassion, evocation; OARS.",
+      "Peer-friendly motivational interviewing: partnership, open questions, affirmations, reflections, summaries, and change talk.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0140(2)(z)", "950-060-0140(4)(e)"],
-    competencies: ["motivational-interviewing", "oars", "stages-of-change", "change-talk"],
-    hook:
-      "Here's the real talk: the righting reflex feels helpful until it turns the peer into an audience for your argument.",
-    coreTruth:
-      "Motivational Interviewing is a collaborative conversation style that strengthens a person's own motivation for change. It fits peer work when we use it with partnership, acceptance, compassion, and evocation.",
-    preservedContent:
-      "MI spirit includes partnership, acceptance, compassion, and evocation. OARS skills are open questions, affirmations, reflections, and summaries. Stages of change include precontemplation, contemplation, preparation, action, maintenance, and recycling after relapse or return to use as part of learning.",
-    oregonContext:
-      "Peers use MI across housing, medications, treatment, harm reduction, family repair, benefits, and health goals. MI does not require you to agree with every choice; it asks you to evoke the peer's reasons and autonomy.",
-    keySkills: [
-      "Resist the righting reflex",
-      "Use OARS to explore ambivalence",
-      "Recognize change talk and sustain talk",
-      "Support autonomy even when you are worried",
+    oarReferences: ["OAR 950-060-0140 communication and engagement", "OAR 410-180 THW standards"],
+    competencies: ["Motivational interviewing basics", "Ambivalence", "Reflections", "Change talk"],
+    peerNugget:
+      "Motivational interviewing is not a trick to make people change. It is a respectful way to help people hear themselves.",
+    references: [...commonPeerRefs, MOTIVATIONAL_INTERVIEWING_NETWORK],
+    sections: [
+      section("The Spirit: Partnership, Not Persuasion", {
+        description: "Use MI as a respectful conversation style, not a sales pitch.",
+        scene:
+          "A peer says, 'Part of me wants to stop using, part of me does not.' You can feel the urge to argue for the safer side.",
+        plainTalk:
+          "Motivational interviewing, or MI, is a conversation style that supports change by honoring autonomy. The spirit is partnership, acceptance, compassion, and evocation. Evocation means drawing out the person's own reasons, not stuffing yours into the room.",
+        trySaying: [
+          "Both sides make sense. What does each side want for you?",
+          "Would it be okay if we explored what you like and do not like about things staying the same?",
+          "You are the one who gets to decide what, if anything, changes.",
+        ],
+        practice:
+          "Write one persuasion sentence, then rewrite it as a partnership sentence.",
+        commonTrap:
+          "The trap is using MI words with a hidden agenda. People can feel the push.",
+        mustKnow:
+          "MI supports autonomy. It is not manipulation or advice in disguise.",
+        quiz: q(
+          "a peer feeling ambivalent about change",
+          "Explore both sides with permission and honor that the choice is theirs.",
+          "Argue strongly for the healthier choice so change talk increases.",
+          "Use MI-consistent peer conversation without providing therapy or treatment plans.",
+          "Assess their readiness clinically and assign a stage.",
+          "Keep sensitive change conversations private according to consent and policy.",
+          "Report every ambivalent statement to the team as resistance.",
+          "Ask what each side of ambivalence wants for them.",
+          "Pressure the safer side because autonomy can wait in risky situations."
+        ),
+      }),
+      section("OARS That Do Not Sound Like Robots", {
+        description: "Practice open questions, affirmations, reflections, and summaries.",
+        scene:
+          "You learned OARS in training: open questions, affirmations, reflections, summaries. Then a real peer says, 'Whatever, none of this matters,' and the acronym vanishes from your brain.",
+        plainTalk:
+          "OARS is just a memory tool. Open questions invite. Affirmations name strength. Reflections show you heard. Summaries gather the thread. The goal is not to use all four like a checklist. The goal is a conversation that feels respectful and useful.",
+        trySaying: [
+          "What has helped you get through weeks like this before?",
+          "You kept showing up even after getting bad news. That says something about you.",
+          "Part of you is exhausted, and part of you still came here today.",
+        ],
+        practice:
+          "Create one open question, one affirmation, one reflection, and one summary for the same peer statement.",
+        commonTrap:
+          "The trap is fake-sounding affirmations. Affirm behavior, effort, values, or survival you actually noticed.",
+        mustKnow:
+          "OARS skills should sound natural and be connected to what the peer actually said.",
+        quiz: q(
+          "using OARS with a discouraged peer",
+          "Use a real reflection or affirmation tied to what the peer said.",
+          "Give a generic compliment so the peer feels encouraged.",
+          "Use communication skills as peer support, not psychotherapy.",
+          "Interpret their discouragement as a clinical symptom.",
+          "Keep conversation details private unless consent or safety policy applies.",
+          "Quote their vulnerable statement in group without asking.",
+          "Ask an open question about what has helped before.",
+          "Summarize only your advice so the direction is clear."
+        ),
+      }),
+      section("Change Talk and Sustain Talk", {
+        description: "Listen for reasons to change and reasons to stay the same.",
+        scene:
+          "The peer says, 'I hate probation, but I also hate waking up sick.' There are two truths in one sentence.",
+        plainTalk:
+          "Change talk points toward movement: desire, ability, reasons, need, commitment, taking steps. Sustain talk points toward keeping things the same. Peer work does not attack sustain talk. We reflect it and gently invite the person to hear their own change talk more clearly.",
+        trySaying: [
+          "You do not want anyone controlling you, and you are tired of waking up sick.",
+          "What worries you most about changing? What worries you most about not changing?",
+          "What would be different if mornings were not so brutal?",
+        ],
+        practice:
+          "Highlight the change-talk words in three mixed statements.",
+        commonTrap:
+          "The trap is pouncing on change talk like a contract. Curiosity works better than celebration pressure.",
+        mustKnow:
+          "Reflect both sides and draw out the peer's own reasons without arguing.",
+        quiz: q(
+          "hearing mixed change and sustain talk",
+          "Reflect both sides and ask what the peer makes of them.",
+          "Ignore sustain talk because it strengthens bad choices.",
+          "Support motivation within peer scope without creating a treatment plan for them.",
+          "Tell the peer their statements prove addiction severity.",
+          "Protect private change goals and share only with consent or policy support.",
+          "Tell the team the peer committed to change when they only wondered out loud.",
+          "Ask what would be different if the hard part changed.",
+          "Treat any change talk as permission to take over planning."
+        ),
+      }),
+      section("When Advice Wants to Jump Out", {
+        description: "Ask permission before information, ideas, or story.",
+        scene:
+          "You know a great medication-assisted treatment clinic, a meeting, and a bus route. The peer says, 'I don't know what to do,' and your advice engine revs up.",
+        plainTalk:
+          "Information can help. Advice can help sometimes. The peer-centered move is permission. Ask if they want ideas. Offer a menu, not a command. Then ask what they think. This keeps the peer in charge and makes your information easier to hear.",
+        trySaying: [
+          "Would it be okay if I shared a couple options I know about?",
+          "Here are three possibilities. Which, if any, feels worth looking at?",
+          "What do you make of those options?",
+        ],
+        practice:
+          "Practice the ask-offer-ask rhythm: ask permission, offer briefly, ask what they think.",
+        commonTrap:
+          "The trap is calling advice 'education' so you do not have to ask permission.",
+        mustKnow:
+          "Ask-offer-ask protects autonomy when sharing information or lived experience.",
+        quiz: q(
+          "wanting to share resources or advice",
+          "Ask permission, offer a short menu, and ask what the peer thinks.",
+          "Give the best resource first because hesitation wastes time.",
+          "Share information and lived experience without prescribing a treatment choice.",
+          "Tell the peer which treatment is clinically best.",
+          "Share referral details only with consent and correct release processes.",
+          "Send their information to a clinic before asking so the spot is not lost.",
+          "Let the peer choose which option, if any, to explore.",
+          "Keep explaining until they pick one of your options."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Track OARS. Mark each open question, affirmation, reflection, and summary you hear, then note what evoked change talk.",
-    scenarioTitle: "Scenario: Drinking and housing",
-    scenarioPrompt:
-      "A peer says, 'I know drinking is wrecking my housing, but it is the only way I sleep.'",
-    choices: [
-      { text: "Tell them they must stop drinking or they deserve eviction.", feedback: "Shame and confrontation increase defensiveness.", score: 0 },
-      { text: "Reflect ambivalence and ask what they make of the connection between sleep, drinking, and housing.", feedback: "This evokes their own meaning and next steps.", score: 100 },
-      { text: "Ignore the drinking and only talk about rent.", feedback: "This misses the peer's stated ambivalence.", score: 35 },
-    ],
-    appliedTitle: "Documentation: evoking change talk",
-    appliedPrompt:
-      "Write three OARS responses to the drinking-and-housing statement: one open question, one affirmation, and one complex reflection. Explain which response might evoke change talk.",
-    appliedKind: "documentation",
-    references: [MOTIVATIONAL_INTERVIEWING_NETWORK, ...commonPeerRefs],
-    modes: ["auditory", "reading", "kinesthetic"],
-    quizFocus: "MI spirit, OARS, stages of change, and change talk",
+    aiReview: aiReview(
+      [
+        "Explain MI spirit in peer language.",
+        "Use OARS naturally.",
+        "Respond to change and sustain talk.",
+        "Use ask-offer-ask before advice.",
+      ],
+      [
+        "MI is not manipulation.",
+        "Autonomy stays central.",
+        "Peers do not prescribe treatment choices.",
+        "Safety limits still apply.",
+      ],
+      [
+        "What does MI mean without jargon?",
+        "Give me an open question and reflection for ambivalence.",
+        "How do you respond to sustain talk?",
+        "Show the ask-offer-ask rhythm.",
+        "When would you stop MI and follow safety protocol?",
+      ]
+    ),
   },
   {
     slug: "documentation-legal",
-    title: "Module 8 - Documentation, HIPAA & Legal Responsibilities",
-    shortTitle: "Documentation and legal responsibilities",
+    title: "Documentation and Legal Basics",
     description:
-      "Write recovery-oriented notes, understand Medicaid-relevant documentation expectations, and legal duties.",
+      "Factual notes, privacy, releases, mandated reporting basics, and plain-language legal boundaries for peer work.",
     estimatedHours: 3,
-    oarReferences: ["950-060-0140(2)(j)", "950-060-0140(2)(u)", "950-060-0140(2)(v)"],
-    competencies: ["documentation", "hipaa", "medicaid-awareness", "legal-responsibilities"],
-    hook:
-      "Here's the real talk: write notes like the peer, your supervisor, and an auditor may all read them.",
-    coreTruth:
-      "Documentation should be factual, respectful, necessary, and connected to the peer's goals. Good notes protect continuity; harmful notes can follow a person through systems.",
-    preservedContent:
-      "Guidelines include writing as if the peer will read it, describing behavior and peer-reported experience, avoiding pejorative labels, connecting activities to goals and peer voice, knowing your EHR and billing rules, and never documenting gossip or unverified claims as fact.",
-    oregonContext:
-      "Oregon peer services may appear in Medicaid-related records, behavioral health EHRs, grant reporting, and supervision files. HIPAA, 42 CFR Part 2 when applicable, release-of-information policy, mandatory reporting, and employer procedure all matter.",
-    keySkills: [
-      "Use person-centered, non-stigmatizing language",
-      "Document peer goals, service provided, and next step",
-      "Protect minimum necessary information",
-      "Know when to consult on mandatory reporting or legal questions",
+    oarReferences: ["OAR 950-060-0140 documentation and confidentiality", "OAR 410-180 THW standards"],
+    competencies: ["Factual documentation", "Confidentiality", "Release of information", "Mandated reporting awareness"],
+    peerNugget:
+      "Good documentation is boring in the best way: clear, factual, respectful, and useful.",
+    references: [...commonPeerRefs, HHS_HIPAA],
+    sections: [
+      section("Notes That Tell the Truth Without Drama", {
+        description: "Write observable facts and peer-stated goals.",
+        scene:
+          "A peer leaves angry after a housing call. You need to write the note while the feeling is still hot in your chest.",
+        plainTalk:
+          "Documentation is not a diary and not a place to win an argument. Write what happened, what the peer said they wanted, what support you provided, and the next step. Avoid labels like manipulative, lazy, dramatic, or noncompliant. Use direct quotes when they help clarify.",
+        trySaying: [
+          "Peer stated they felt ignored during the call.",
+          "Peer chose to pause housing calls until tomorrow.",
+          "PSS offered to review the letter together at next visit.",
+        ],
+        practice:
+          "Turn one judgment sentence into an observable fact sentence.",
+        commonTrap:
+          "The trap is writing your frustration into the record. The note may outlive the mood.",
+        mustKnow:
+          "Notes should be factual, respectful, and within your role.",
+        quiz: q(
+          "writing after a tense meeting",
+          "Document facts, peer statements, support provided, and next steps.",
+          "Write that the peer was dramatic so the team understands the tone.",
+          "Write peer support notes, not clinical assessments or legal conclusions.",
+          "Diagnose the reason the peer became angry.",
+          "Include only information allowed by policy and needed for the record.",
+          "Add extra personal history because it explains the anger.",
+          "Reflect the peer's chosen next step in the note.",
+          "Choose the next step in the note even if the peer did not agree."
+        ),
+      }),
+      section("Releases and Need-to-Know", {
+        description: "Share information only with consent and proper purpose.",
+        scene:
+          "A housing worker asks you to send 'everything you have' because it will speed up an application.",
+        plainTalk:
+          "A release of information is permission to share specific information with specific people for a specific reason. Need-to-know means not everyone who is curious gets access. When in doubt, slow down and check policy.",
+        trySaying: [
+          "Let's look at what the release actually allows before I send anything.",
+          "We can share the minimum needed for this purpose.",
+          "I want this to move fast and stay private.",
+        ],
+        practice:
+          "Write the three questions you ask before sharing information: who, what, why.",
+        commonTrap:
+          "The trap is oversharing to be helpful. Privacy is part of helpful.",
+        mustKnow:
+          "Consent is specific. Share the minimum needed and follow releases and policy.",
+        quiz: q(
+          "a request for all records",
+          "Check the release, share only what is allowed and needed, and involve the peer.",
+          "Send everything because the housing worker is helping.",
+          "Navigate releases and privacy without giving legal advice.",
+          "Decide the release covers anything that might help.",
+          "Use valid consent and minimum necessary sharing.",
+          "Forward records through personal email because it is faster.",
+          "Ask the peer what they want shared within the release.",
+          "Tell the peer privacy slows down their application and skip the details."
+        ),
+      }),
+      section("Mandated Reporting and Safety Limits", {
+        description: "Know when privacy has limits and how to explain them.",
+        scene:
+          "A peer tells you something involving a child that may trigger mandatory reporting. They whisper, 'You won't tell anyone, right?'",
+        plainTalk:
+          "Some information cannot stay private. Mandated reporting rules depend on role, setting, population, and state law. Your employer trains the exact steps. Peer voice still matters: be honest, do not threaten, and do not promise secrecy you cannot keep.",
+        trySaying: [
+          "I want to be honest before you share more: there are a few safety things I cannot keep secret.",
+          "I need to follow our reporting policy, and I can explain what happens next.",
+          "I will not leave you alone with this if we can help it.",
+        ],
+        practice:
+          "Practice a limits-of-confidentiality sentence before a hard conversation starts.",
+        commonTrap:
+          "The trap is promising total confidentiality because you want the peer to trust you.",
+        mustKnow:
+          "Explain privacy limits early and follow mandated reporting and safety policies.",
+        quiz: q(
+          "information that may require reporting",
+          "Be honest about limits and follow employer reporting policy.",
+          "Promise secrecy first so the peer feels safe enough to talk.",
+          "Recognize reporting limits and consult policy/supervision; do not give legal advice.",
+          "Investigate the report yourself to decide if it is true.",
+          "Share required information through approved reporting channels.",
+          "Tell unrelated staff so everyone can watch the peer closely.",
+          "Explain what choices the peer still has during the process.",
+          "Take over completely because reporting removes peer choice."
+        ),
+      }),
+      section("Legal Questions Are Not Peer Advice", {
+        description: "Support navigation without practicing law.",
+        scene:
+          "A peer hands you eviction papers and says, 'Should I fight this or move out?' You want to answer because the deadline is scary.",
+        plainTalk:
+          "Peers can help read forms, find deadlines, make calls, gather questions, and connect to legal resources. Peers do not give legal advice. Saying 'I am not a lawyer' is not cold; it protects the peer from bad information and connects them to the right help.",
+        trySaying: [
+          "I cannot tell you what legal choice to make, but I can help you find legal aid and list questions.",
+          "Let's look for deadlines and contact information together.",
+          "Do you want to call 211info or legal aid while I sit with you?",
+        ],
+        practice:
+          "Create a legal-navigation script that names your limit and offers two supports.",
+        commonTrap:
+          "The trap is answering because the paperwork feels urgent. Urgency is exactly why scope matters.",
+        mustKnow:
+          "Support legal navigation, not legal advice. Route to qualified legal help.",
+        quiz: q(
+          "a peer asking what to do with eviction papers",
+          "Name that you cannot give legal advice and help connect to legal resources.",
+          "Tell them the option you would choose so they have direction.",
+          "Help with navigation and questions while routing legal decisions to qualified help.",
+          "Interpret the eviction notice as if you were their representative.",
+          "Share legal paperwork only with consent and secure program processes.",
+          "Send photos of the papers to your friend who knows rentals.",
+          "Offer choices like calling legal aid, listing questions, or finding deadlines.",
+          "Make the legal call yourself and decide what to say."
+        ),
+      }),
     ],
-    watchPrompt:
-      "If reviewing a sample documentation training, pause after each note and ask: would this note help the peer or label them?",
-    scenarioTitle: "Scenario: The note after a hard meeting",
-    scenarioPrompt:
-      "Alex missed shelter intake, cried, practiced grounding, declined a referral today, and asked to revisit Friday. You need to document the contact.",
-    choices: [
-      { text: "Write: 'Client was noncompliant and dramatic.'", feedback: "This is stigmatizing and not useful.", score: 0 },
-      { text: "Write respectful facts, peer voice, support provided, decision made, and follow-up plan.", feedback: "This is recovery-oriented documentation.", score: 100 },
-      { text: "Write nothing because documentation feels clinical.", feedback: "Required documentation can be done in a peer-centered way.", score: 25 },
-    ],
-    appliedTitle: "Exercise: write a peer progress note",
-    appliedPrompt:
-      "Scenario: You met Alex for 45 minutes at a resource center. Alex wanted help calling OHP enrollment support and practiced a grounding skill. Alex declined shelter referral today but asked to revisit Friday. Write a brief SOAP or DAP-style note that is recovery-oriented.",
-    appliedKind: "documentation",
-    references: [HHS_HIPAA, OREGON_HEALTH_PLAN, ...commonPeerRefs],
-    modes: ["reading", "kinesthetic"],
-    quizFocus: "documentation, HIPAA, Medicaid awareness, and legal responsibilities",
+    aiReview: aiReview(
+      [
+        "Write factual, respectful notes.",
+        "Explain releases and minimum necessary sharing.",
+        "Describe confidentiality limits and reporting basics.",
+        "Support legal navigation without giving legal advice.",
+      ],
+      [
+        "No clinical labels in peer notes.",
+        "No promises of total secrecy.",
+        "Use releases, policy, and supervision.",
+        "Route legal questions to qualified help.",
+      ],
+      [
+        "Turn a judgment into a factual note.",
+        "What do you check before sharing records?",
+        "How do you explain mandated reporting limits warmly?",
+        "What would you say about eviction papers?",
+        "Why is boring documentation a good thing?",
+      ]
+    ),
   },
   {
     slug: "systems-resources",
-    title: "Module 9 - Systems Navigation & Community Resources",
-    shortTitle: "Systems and resources",
+    title: "Systems and Resources",
     description:
-      "Navigate Oregon behavioral health, housing, benefits, and mutual-aid resources with peers.",
+      "Navigate benefits, healthcare, housing, transportation, and community supports without becoming the system yourself.",
     estimatedHours: 3,
-    oarReferences: ["950-060-0140(2)(d)", "950-060-0140(2)(m)", "950-060-0140(2)(n)"],
-    competencies: ["systems-navigation", "community-resources", "benefits-literacy", "family-support-systems"],
-    hook:
-      "Here's the real talk: a warm handoff can be the difference between a resource list and an actual door opening.",
-    coreTruth:
-      "Systems navigation helps people move through confusing service networks without creating dependency. The peer stays in the lead; the worker translates, accompanies, and connects.",
-    preservedContent:
-      "Peers help navigate Oregon Health Plan and coordinated care organizations, community mental health programs, SUD treatment and recovery support, housing systems, SNAP, SSI/SSDI advocacy pathways, peer-run organizations, and mutual aid. Skills include warm handoffs, appointment accompaniment, systems literacy, and knowing when to involve case managers or navigators.",
-    oregonContext:
-      "Rural Oregon access differs from Portland metro. Transportation, broadband, language access, tribal service pathways, shelter availability, and CCO differences can shape what is realistic today.",
-    keySkills: [
-      "Build and maintain a living regional resource map",
-      "Make warm handoffs with consent",
-      "Teach systems literacy without taking over",
-      "Prioritize immediate safety, food, shelter, benefits, and connection",
+    oarReferences: ["OAR 950-060-0140 resource navigation", "OAR 410-180 THW standards"],
+    competencies: ["Resource navigation", "Warm referrals", "Benefits basics", "Systems advocacy"],
+    peerNugget:
+      "Navigation means making the maze more usable while the peer keeps their own map.",
+    references: [...commonPeerRefs, OREGON_211, OREGON_HEALTH_PLAN],
+    sections: [
+      section("Mapping the Maze", {
+        description: "Start with what the peer wants and what is already in place.",
+        scene:
+          "A peer needs food, a phone, ID, dental care, and a safer place to sleep. Every need is real. The list could swallow the whole day.",
+        plainTalk:
+          "Resource navigation starts with sorting, not solving everything at once. Ask what feels most urgent to the peer. Notice deadlines and safety needs. Then map what supports already exist: family, community, benefits, clinics, faith groups, mutual aid, and formal programs.",
+        trySaying: [
+          "That is a lot to carry. Which piece feels most urgent today?",
+          "What support is already in your corner, even a little?",
+          "Let's pick one next step that would make the rest easier.",
+        ],
+        practice:
+          "Make a resource map with the peer in the center and supports around them.",
+        commonTrap:
+          "The trap is treating the loudest system deadline as the peer's top priority without asking.",
+        mustKnow:
+          "Navigation is collaborative prioritizing and connecting, not taking over every task.",
+        quiz: q(
+          "many urgent resource needs",
+          "Ask the peer to choose the first priority while noticing safety and deadlines.",
+          "Start with the resource you know best so you can make progress.",
+          "Support navigation and advocacy without becoming a case manager outside your role.",
+          "Decide eligibility for programs based on what the peer tells you.",
+          "Share personal information only with consent and program need.",
+          "Send the whole resource list to agencies without releases.",
+          "Offer a menu of next steps and let the peer choose one.",
+          "Create a full plan alone so the peer can rest."
+        ),
+      }),
+      section("Warm Referrals That Do Not Feel Like Rejection", {
+        description: "Connect people to supports while staying emotionally present.",
+        scene:
+          "You found a food pantry, but the peer says, 'So you're passing me off too?'",
+        plainTalk:
+          "A referral can feel like rejection if the relationship disappears. A warm referral explains why the support fits, what to expect, what choices exist, and whether you can help with the first step. It says, 'I am not the whole answer, and I am still with you in this.'",
+        trySaying: [
+          "I am not sending you away. This pantry can help with food, and I can help you plan the first call.",
+          "Do you want the address, a phone call together, or to look at other options?",
+          "Let's talk about what would make walking in feel less weird.",
+        ],
+        practice:
+          "Write a warm referral script that includes why, what to expect, and choice.",
+        commonTrap:
+          "The trap is handing over a list and calling it support. A list is a tool, not a relationship.",
+        mustKnow:
+          "Warm referrals include consent, expectation-setting, and follow-through within role.",
+        quiz: q(
+          "referring to a food pantry",
+          "Explain the fit, ask what support they want, and plan the first step together.",
+          "Hand over a list quickly because the resource is accurate.",
+          "Make referrals and warm handoffs without guaranteeing service approval.",
+          "Promise the pantry will serve them today.",
+          "Share only needed information with the resource and only with consent.",
+          "Call the pantry with personal details before the peer agrees.",
+          "Offer choices like call together, go over hours, or compare options.",
+          "Insist they go because food is clearly the priority."
+        ),
+      }),
+      section("Oregon Health Plan Basics", {
+        description: "Help peers understand health coverage without pretending to be eligibility experts.",
+        scene:
+          "The peer says their Oregon Health Plan card stopped working. They missed one letter and now every appointment feels at risk.",
+        plainTalk:
+          "The Oregon Health Plan is Oregon's Medicaid program. Peers can help people read letters, find member services, call a coordinated care organization, and prepare questions. Peers do not determine eligibility or promise coverage. The goal is to make the next contact less confusing.",
+        trySaying: [
+          "Oregon Health Plan is the state Medicaid coverage. Let's find who the letter says to call.",
+          "I cannot decide eligibility, but I can sit with you while you ask questions.",
+          "Want to write down what happened before the call?",
+        ],
+        practice:
+          "Write three questions a peer could ask member services about coverage.",
+        commonTrap:
+          "The trap is saying 'you should qualify' because it feels reassuring. Eligibility decisions belong to the program.",
+        mustKnow:
+          "Peers support health coverage navigation but do not determine eligibility or benefits.",
+        quiz: q(
+          "Oregon Health Plan confusion",
+          "Help read the letter and prepare a call without promising eligibility.",
+          "Reassure them they qualify because their need is obvious.",
+          "Navigate coverage questions while routing decisions to OHP/member services.",
+          "Tell the clinic the plan must cover the visit because you advocate for the peer.",
+          "Use consent before sharing health or benefit information.",
+          "Call member services as the peer without them present.",
+          "Offer choices like call together, draft questions, or find member contacts.",
+          "Take the letter and handle it alone."
+        ),
+      }),
+      section("Following Up Without Chasing", {
+        description: "Support follow-through without becoming the motivation police.",
+        scene:
+          "The peer did not call the resource you found together. You feel disappointed because the opening may close.",
+        plainTalk:
+          "Follow-up is a chance to learn, not a chance to scold. Barriers may include shame, phone anxiety, transportation, literacy, culture, past rejection, disability, or simply too much life. Ask what happened and what they want now.",
+        trySaying: [
+          "How did that plan fit once you got home?",
+          "What got in the way, and do you still want that resource?",
+          "Do you want to adjust the plan or choose something else?",
+        ],
+        practice:
+          "Turn 'Did you do it?' into three curious follow-up questions.",
+        commonTrap:
+          "The trap is tracking tasks like compliance. Peer follow-up is about learning and adjusting.",
+        mustKnow:
+          "Follow-up should support self-efficacy and choice, not shame.",
+        quiz: q(
+          "a peer not completing a resource call",
+          "Ask what got in the way and whether the plan still fits.",
+          "Warn them they may lose your help if they do not follow through.",
+          "Support follow-through as peer coaching, not compliance monitoring.",
+          "Document the peer as noncompliant without asking about barriers.",
+          "Keep resource information private and update records factually.",
+          "Tell the resource the peer failed to call so they hold the spot.",
+          "Offer choices to adjust, retry, or choose a different step.",
+          "Do the call for them every time so barriers disappear."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Observe whether the helper gives a list, makes a connection, or supports the peer to make the connection themselves.",
-    scenarioTitle: "Scenario: Newly homeless family",
-    scenarioPrompt:
-      "A peer and their child just lost housing. They are overwhelmed and asking you to 'fix it.'",
-    choices: [
-      { text: "Promise you will find them an apartment by tomorrow.", feedback: "Overpromising harms trust.", score: 10 },
-      { text: "Slow down, assess immediate safety and needs, co-create next steps such as 211, shelter options, benefits, school stability, and clarify what you can do together today.", feedback: "Collaborative, realistic, and empowerment-based.", score: 100 },
-      { text: "Tell them to search online and call you later.", feedback: "This abandons without scaffolding.", score: 20 },
-    ],
-    appliedTitle: "Documentation: regional resource map",
-    appliedPrompt:
-      "Create a starter resource map for one Oregon community: crisis line, OHP/CCO help, shelter or coordinated entry, food, transportation, culturally specific support, and one peer-run or mutual-aid resource.",
-    appliedKind: "documentation",
-    references: [OREGON_211, OREGON_HEALTH_PLAN, ...commonPeerRefs],
-    modes: ["visual", "reading", "kinesthetic"],
-    quizFocus: "systems navigation, resource connection, and warm handoffs",
+    aiReview: aiReview(
+      [
+        "Map resource needs with the peer's priorities.",
+        "Make warm referrals with consent.",
+        "Explain Oregon Health Plan basics plainly.",
+        "Follow up without shame or chasing.",
+      ],
+      [
+        "Do not promise eligibility, openings, or approvals.",
+        "Use consent before sharing information.",
+        "Warm referrals are not abandonment.",
+        "Choice stays central even when resources are scarce.",
+      ],
+      [
+        "How do you prioritize five urgent needs?",
+        "Show me a warm referral script.",
+        "Explain Oregon Health Plan without jargon.",
+        "What would you ask after a missed resource call?",
+        "How do you avoid becoming the whole system for someone?",
+      ]
+    ),
   },
   {
     slug: "self-care",
-    title: "Module 10 - Self-Care & Sustainable Peer Work",
-    shortTitle: "Self-care and sustainability",
+    title: "Self-Care and Sustainability",
     description:
-      "Build personal wellness practices, recognize vicarious trauma, and use supervision.",
+      "Personal wellness, supervision, burnout prevention, boundaries, and staying in the work without losing yourself.",
     estimatedHours: 3,
-    oarReferences: ["950-060-0140(2)(p)"],
-    competencies: ["self-care", "vicarious-trauma", "supervision-use"],
-    hook:
-      "Here's the real talk: burnout is not proof that you care; it is a signal to change the conditions around your care.",
-    coreTruth:
-      "Self-care is an ethical obligation in peer work. Burned-out peers can unintentionally harm relationships, blur boundaries, avoid documentation, or over-identify with crisis.",
-    preservedContent:
-      "Practices include a personal WRAP or wellness plan, supervision and peer consultation, boundaries around after-hours contact, grief and secondary trauma supports, and knowing when to step back. Vicarious trauma is the impact on helpers from repeated exposure to others' traumatic material.",
-    oregonContext:
-      "Peer workers in Oregon may serve communities they also belong to. That can be powerful and exhausting. Sustainable practice requires supervision that honors peer identity, not just productivity metrics.",
-    keySkills: [
-      "Identify early warning signs of burnout and vicarious trauma",
-      "Create a daily maintenance and support plan",
-      "Use supervision before resentment turns into rupture",
-      "Set after-hours and personal disclosure boundaries",
+    oarReferences: ["OAR 950-060-0140 self-care and professional development", "OAR 410-180 THW standards"],
+    competencies: ["Self-awareness", "Burnout prevention", "Supervision", "Sustainable practice"],
+    peerNugget:
+      "Self-care is not a bubble bath requirement. It is how you keep your peer support from running on fumes.",
+    references: [...commonPeerRefs],
+    sections: [
+      section("Know Your Signals", {
+        description: "Notice stress early enough to respond kindly.",
+        scene:
+          "You are annoyed before the peer even sits down. Their story is not the problem; your tank is blinking empty.",
+        plainTalk:
+          "Self-awareness is a job skill. Your body may notice burnout before your calendar does: tight shoulders, cynicism, rescuing, dread, numbness, skipping notes, or wanting to avoid certain peers. Signals are not shame. They are dashboard lights.",
+        trySaying: [
+          "I am noticing I am activated. I need to slow down before I respond.",
+          "This belongs in supervision, not in the peer conversation.",
+          "I can be caring and still need support.",
+        ],
+        practice:
+          "List five personal early warning signs and one small response for each.",
+        commonTrap:
+          "The trap is calling exhaustion dedication. Dedication without care can turn into harm.",
+        mustKnow:
+          "Peers need self-awareness to protect relationships, boundaries, and safety.",
+        quiz: q(
+          "noticing burnout signals",
+          "Name the signal, slow down, and use support before it leaks into peer work.",
+          "Ignore it because peers should be selfless.",
+          "Use supervision and wellness tools while staying responsible for your role.",
+          "Tell the peer they triggered you so they understand your mood.",
+          "Keep peer details private when seeking support, using supervision appropriately.",
+          "Vent with identifying details in a public recovery space.",
+          "Choose a small support step like break, consult, grounding, or schedule adjustment.",
+          "Quit responding to the peer without explanation."
+        ),
+      }),
+      section("Supervision Is a Strength", {
+        description: "Use supervision before stuckness becomes drift.",
+        scene:
+          "You keep thinking about one peer after work. You are checking your phone, replaying the conversation, and wondering if you should have done more.",
+        plainTalk:
+          "Supervision is not only for mistakes. It is where you sort scope, feelings, culture, ethics, safety, and next steps. Good supervision helps you stay peer, not rescuer, therapist, parent, or secret keeper.",
+        trySaying: [
+          "I need supervision on scope and my own pull to rescue here.",
+          "Can we review what is mine to do and what belongs to the team?",
+          "I want to support this peer without becoming their whole plan.",
+        ],
+        practice:
+          "Write a supervision agenda with facts, feelings, scope question, and next-step question.",
+        commonTrap:
+          "The trap is waiting until you are in trouble to ask for supervision.",
+        mustKnow:
+          "Supervision supports ethical, safe, sustainable peer practice.",
+        quiz: q(
+          "feeling pulled to rescue a peer",
+          "Bring facts, feelings, and a scope question to supervision.",
+          "Work harder privately because the peer needs someone dependable.",
+          "Use supervision to stay within peer scope and protect the relationship.",
+          "Start providing therapy-like support after hours.",
+          "Share only necessary details in the proper supervision setting.",
+          "Ask social media friends what to do using the peer's situation.",
+          "Choose next steps with supervisor guidance and peer consent where needed.",
+          "Hide the rescue feelings because they sound unprofessional."
+        ),
+      }),
+      section("Boundaries With Your Own Story", {
+        description: "Care for your recovery while using lived experience.",
+        scene:
+          "A peer's story sounds close to yours. Too close. You can feel old memories trying to drive the conversation.",
+        plainTalk:
+          "Your lived experience is powerful, and it is also tender. You get to have privacy. You get to choose what not to share. You get to step back, consult, or ask for coverage when a topic hits too close. That is not failure; it is responsibility.",
+        trySaying: [
+          "I relate to parts of this, and I want to keep the focus on you.",
+          "I need to pause for a moment so I can stay present.",
+          "I am going to consult my supervisor to make sure I support you well.",
+        ],
+        practice:
+          "Name three story areas you are comfortable sharing and three that need stronger boundaries.",
+        commonTrap:
+          "The trap is proving credibility by opening wounds that are not ready to be public.",
+        mustKnow:
+          "Peers can protect their own story and recovery while still being authentic.",
+        quiz: q(
+          "a peer story that hits close to your own",
+          "Keep focus on the peer, use grounding, and consult supervision if needed.",
+          "Share deeply so the peer knows they are not alone.",
+          "Use lived experience selectively while maintaining boundaries and scope.",
+          "Process your own trauma with the peer because mutuality means both people share equally.",
+          "Keep the peer's story and your own private details appropriately protected.",
+          "Tell coworkers the peer's story because it explains why you are upset.",
+          "Choose whether to pause, continue, or seek support based on safety and presence.",
+          "Push through no matter what because leaving would be abandonment."
+        ),
+      }),
+      section("A Sustainable Peer Practice Plan", {
+        description: "Build routines that make good work repeatable.",
+        scene:
+          "It is Friday. Notes are behind, your lunch is untouched, and you promised three people you would check on something before Monday.",
+        plainTalk:
+          "Sustainability is built in boring systems: realistic caseload habits, note time, breaks, peer consultation, recovery supports, sleep, food, movement, spiritual care, humor, and saying no before resentment takes over. The plan should fit real life, not an ideal version of you.",
+        trySaying: [
+          "I can follow up Monday morning, not tonight.",
+          "Let me write that down so I do not carry it in my head all weekend.",
+          "I need to close the loop on what I promised and what I cannot promise.",
+        ],
+        practice:
+          "Make a Friday shutdown checklist: notes, promises, supervision flags, body check, next workday start.",
+        commonTrap:
+          "The trap is confusing availability with commitment. Reliable support has limits.",
+        mustKnow:
+          "Sustainable practice uses routines, boundaries, supervision, and personal recovery supports.",
+        quiz: q(
+          "ending the week overloaded",
+          "Clarify promises, document, set realistic follow-up, and use support.",
+          "Keep working unpaid until every need is handled.",
+          "Maintain sustainable peer practice within role and employment policy.",
+          "Ignore documentation so you can provide more emotional support.",
+          "Protect privacy while organizing follow-up and supervision notes.",
+          "Take peer files home casually to catch up over the weekend.",
+          "Offer realistic follow-up choices and do not promise what you cannot do.",
+          "Say yes to every request because peers have been let down before."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Watch for the difference between individual coping tips and systemic supports such as supervision, workload, and team culture.",
-    scenarioTitle: "Scenario: The text after hours",
-    scenarioPrompt:
-      "A peer texts your personal number at midnight saying they are lonely and asking you to stay on the phone until morning.",
-    choices: [
-      { text: "Stay up all night and hide it from your supervisor.", feedback: "This creates unsustainable and unsafe role confusion.", score: 10 },
-      { text: "Follow after-hours policy, offer appropriate crisis/warmline resources if needed, and bring the boundary issue to supervision.", feedback: "This protects care and sustainability.", score: 100 },
-      { text: "Block them with no explanation.", feedback: "Abrupt disconnection can harm trust; use policy and repair when possible.", score: 25 },
-    ],
-    appliedTitle: "Reflection: personal wellness plan",
-    appliedPrompt:
-      "Create a one-page wellness plan: daily supports, early warning signs, people you can call, supervision topics, grief supports, and boundaries for this training and future peer work.",
-    appliedKind: "reflection",
-    references: [SAMHSA_TRAUMA, ...commonPeerRefs],
-    modes: ["reflective", "reading", "kinesthetic"],
-    quizFocus: "self-care, vicarious trauma, supervision, and sustainable peer work",
+    aiReview: aiReview(
+      [
+        "Name personal stress and burnout signals.",
+        "Use supervision as a normal practice tool.",
+        "Set boundaries with personal story sharing.",
+        "Create a sustainable peer practice rhythm.",
+      ],
+      [
+        "Self-care protects peers too.",
+        "Supervision is used before crises and after hard moments.",
+        "Do not process your recovery through the peer.",
+        "Reliable support includes realistic limits.",
+      ],
+      [
+        "What are your early burnout signals?",
+        "How would you ask for supervision on rescue feelings?",
+        "What part of your story needs a boundary?",
+        "Build a Friday shutdown plan out loud.",
+        "How can saying no be part of care?",
+      ]
+    ),
   },
   {
     slug: "pss-practice-lab",
-    title: "Module 11 - Skills Lab, AI Practice & Competency Gate",
-    shortTitle: "PSS practice lab",
+    title: "PSS Practice Lab",
     description:
-      "Integrate skills through AI roleplays, documentation, and readiness for live evaluation.",
+      "Put it all together with realistic conversations, peer voice, scope, safety, documentation, and instructor-ready reflection.",
     estimatedHours: 4,
-    oarReferences: ["950-060-0100", "950-060-0140(5)"],
-    competencies: ["integrated-practice", "competency-demonstration", "roleplay-mastery"],
-    hook:
-      "Here's the real talk: seat time opens the door, but practice evidence shows you can walk through it.",
-    coreTruth:
-      "Cascade Peer Academy treats completion as competency-based. Students integrate listening, boundaries, trauma-informed practice, crisis routing, MI, documentation, and resource navigation.",
-    preservedContent:
-      "To complete PSS, students finish required modules and quizzes, complete required AI practice sessions across domains, submit documentation exercises, attend required live workshops for hybrid tracks, and pass a final human instructor competency evaluation. AI is a practice environment; human instructors make final completion recommendations.",
-    oregonContext:
-      "A completion certificate supports an OHA THW application but is not state certification by itself. Students should leave with a clean completion record, practice portfolio, and understanding of next steps.",
-    keySkills: [
-      "Use AI roleplay feedback to revise practice",
-      "Prepare for observed roleplay with an instructor",
-      "Connect documentation evidence to competency domains",
-      "Explain completion versus OHA certification",
+    oarReferences: ["OAR 950-060-0140 applied practice", "OAR 410-180 THW competency standards"],
+    competencies: ["Integrated peer practice", "Roleplay", "Documentation", "Competency readiness"],
+    peerNugget:
+      "Practice lab is where we stop admiring the values and start saying the words out loud.",
+    references: commonPeerRefs,
+    sections: [
+      section("Opening a Peer Conversation", {
+        description: "Start with consent, role clarity, and a human welcome.",
+        scene:
+          "A new peer sits down and says, 'So what is this supposed to be?' It is an invitation to explain your role without sounding like a brochure.",
+        plainTalk:
+          "A strong opening lowers pressure. Say who you are, what peer support can offer, what it cannot do, and how the person can use the time. Keep it short. The best opening creates room for the peer's agenda, not yours.",
+        trySaying: [
+          "I am here as a peer, meaning I use lived experience and support skills to walk beside you.",
+          "I am not a therapist or prescriber. We can talk, plan, practice, and connect to resources.",
+          "What would make this time useful for you?",
+        ],
+        practice:
+          "Record yourself giving a 30-second peer support welcome and remove any jargon.",
+        commonTrap:
+          "The trap is over-explaining the role because you are nervous. Short and warm wins.",
+        mustKnow:
+          "Openings should include peer role, limits, choice, and invitation.",
+        quiz: q(
+          "opening a first peer meeting",
+          "Briefly explain the peer role and ask what would make the time useful.",
+          "Start with your full recovery story so they know you are credible.",
+          "Name peer support limits without sounding clinical or superior.",
+          "Offer therapy if they do not already have a counselor.",
+          "Explain privacy and safety limits according to program practice.",
+          "Skip privacy because it makes the opening too formal.",
+          "Let the peer choose the focus for the conversation.",
+          "Set the agenda yourself so the meeting has structure."
+        ),
+      }),
+      section("The Middle: Staying With the Thread", {
+        description: "Keep the conversation focused without controlling it.",
+        scene:
+          "Ten minutes in, the peer has touched housing, grief, relapse, food, and a fight with their sister. All of it matters.",
+        plainTalk:
+          "The middle of a conversation is where peers can get lost. Summaries help. So does asking what thread the person wants to follow first. You can honor the whole story without chasing every rabbit trail.",
+        trySaying: [
+          "I heard housing, grief, and your sister all tangled together. Which thread should we hold first?",
+          "Can I pause us and check if we are still on what matters most today?",
+          "What is the smallest useful step from this conversation?",
+        ],
+        practice:
+          "Take a messy paragraph and write a two-sentence summary plus one focusing question.",
+        commonTrap:
+          "The trap is taking control because the story is messy. Collaboration can still have structure.",
+        mustKnow:
+          "Use summaries and focusing questions to support clarity while preserving peer choice.",
+        quiz: q(
+          "a conversation with many urgent threads",
+          "Summarize the threads and ask which one to hold first.",
+          "Pick the thread you can solve fastest.",
+          "Use peer communication skills without acting as a counselor or case manager outside role.",
+          "Interpret the messy story as a symptom pattern.",
+          "Keep private details within the support relationship and policy.",
+          "Share the whole messy story at huddle to get ideas.",
+          "Ask the peer to choose the smallest useful next step.",
+          "Push the original agenda even if the peer's priority changed."
+        ),
+      }),
+      section("Closing Without Dropping", {
+        description: "End with clarity, choice, and realistic follow-up.",
+        scene:
+          "The meeting is almost over. The peer says, 'So what now?' A good closing can turn a helpful talk into a doable next step.",
+        plainTalk:
+          "Closing is not an afterthought. Summarize what mattered, name the next step the peer chose, clarify who is doing what, and check for safety or support needs before leaving. Keep promises small enough to keep.",
+        trySaying: [
+          "Here is what I heard and what you chose for next step. Did I get it right?",
+          "What, if anything, do you want me to follow up on?",
+          "Before we wrap, is there any safety concern we need to plan for today?",
+        ],
+        practice:
+          "Write a closing script with summary, next step, roles, and safety check.",
+        commonTrap:
+          "The trap is ending with vague encouragement. 'You got this' is nice; clear next steps are kinder.",
+        mustKnow:
+          "Closings should include summary, peer-chosen next step, role clarity, and safety check when appropriate.",
+        quiz: q(
+          "closing a peer meeting",
+          "Summarize, confirm the peer's next step, clarify follow-up, and check safety if needed.",
+          "End with encouragement only because planning can feel controlling.",
+          "Close within peer scope and route safety concerns by protocol.",
+          "Set a clinical homework assignment to keep momentum.",
+          "Document follow-up and safety information according to policy.",
+          "Avoid documentation because the conversation was informal.",
+          "Ask what they want you to follow up on, if anything.",
+          "Promise broad availability so they feel supported."
+        ),
+      }),
+      section("Demo Readiness: What Instructors Listen For", {
+        description: "Prepare for human evaluation with peer voice and clean scope.",
+        scene:
+          "You are about to do a practice conversation. Your nerves say, 'Sound professional.' Your training says, 'Sound like a grounded peer.'",
+        plainTalk:
+          "Instructors are not looking for a perfect script. They are listening for the stance: warmth, choice, lived-experience wisdom, boundaries, safety awareness, and plain language. If you make a mistake, repair it. Repair often shows more readiness than pretending nothing happened.",
+        trySaying: [
+          "Let me back up and ask permission before I offer that idea.",
+          "I am not the person who can diagnose that, but I can help you think about support options.",
+          "I care about this and I do not want to take over your choice.",
+        ],
+        practice:
+          "Do a five-minute roleplay and mark every moment you asked permission, reflected, or named scope.",
+        commonTrap:
+          "The trap is trying to impress the instructor instead of being useful to the peer in front of you.",
+        mustKnow:
+          "AI practice helps rehearse, but certification and completion remain human instructor decisions.",
+        quiz: q(
+          "a final practice demonstration",
+          "Use warm peer language, ask permission, name scope, and repair mistakes.",
+          "Use more professional jargon so the instructor hears competence.",
+          "Demonstrate peer support skills without claiming clinical, legal, or crisis authority.",
+          "Diagnose quickly to show you caught the main issue.",
+          "Treat practice records as private training records according to program policy.",
+          "Share the practice scenario publicly because it is fictional.",
+          "Let the peer's goals guide the conversation and next step.",
+          "Do everything perfectly without asking for help or supervision."
+        ),
+      }),
     ],
-    watchPrompt:
-      "Review your own AI feedback history like a game tape: what pattern improved, what repeated, and what needs instructor coaching?",
-    scenarioTitle: "Scenario: Feedback that stings",
-    scenarioPrompt:
-      "Your AI roleplay feedback says you gave advice too quickly during a crisis scenario. You feel defensive because you were trying to help.",
-    choices: [
-      { text: "Dismiss the feedback and repeat the same approach.", feedback: "Competency grows when feedback changes practice.", score: 20 },
-      { text: "Identify the moment, rewrite two responses, and practice again before live evaluation.", feedback: "This turns feedback into skill-building evidence.", score: 100 },
-      { text: "Argue that AI decides certification.", feedback: "Human instructors make final completion recommendations; AI is practice support.", score: 35 },
-    ],
-    appliedTitle: "Required: complete AI roleplay set (PSS)",
-    appliedPrompt:
-      "Complete at least eight AI peer sessions covering listening, boundaries, crisis routing, MI, and systems navigation. Save feedback notes and one revised response from each domain.",
-    appliedKind: "roleplay",
-    references: [SAMHSA_PEER_SUPPORT, OHA_THW_REQUIREMENTS, ...commonPeerRefs],
-    modes: ["auditory", "kinesthetic", "reflective"],
-    quizFocus: "integrated PSS competencies and completion readiness",
+    aiReview: aiReview(
+      [
+        "Open, focus, and close a peer conversation.",
+        "Use summaries, permission, and role clarity.",
+        "Demonstrate scope and safety under practice pressure.",
+        "Prepare for human instructor evaluation.",
+      ],
+      [
+        "AI practice does not certify students.",
+        "Practice must include peer choice and plain language.",
+        "Scope and safety are non-negotiable.",
+        "Repair is better than pretending.",
+      ],
+      [
+        "Give me your 30-second peer support opening.",
+        "How would you focus a messy conversation?",
+        "Show me a strong closing statement.",
+        "What would an instructor listen for in your demo?",
+        "How do you recover after a roleplay mistake?",
+      ]
+    ),
   },
 ];
 
-export const CORE_PSS_MODULES: ModuleSeed[] = PSS_SPECS.map(buildModule);
+export const CORE_PSS_MODULES = pssModuleSpecs.map(buildHybridModule);
 
 export const PSS_COURSE: CourseSeed = {
-  slug: "oregon-pss-40",
+  slug: "pss",
   type: "PSS",
-  title: "Peer Support Specialist (PSS) - 40-Hour Academy",
-  subtitle: "OHA Traditional Health Worker aligned foundational training",
+  title: "Peer Support Specialist Certification Training",
+  subtitle: "40-hour Oregon-aligned PSS training with section checks and module AI review",
   description:
-    "A modern, competency-based 40-hour Peer Support Specialist training designed for Oregon OHA approval. Combines self-paced interactive learning, AI practice simulations, and human instructor evaluation. Available as fully at-your-own-pace (AYOP) with required live competency gates, or hybrid with scheduled virtual workshops.",
+    "A warm, practical 40-hour Peer Support Specialist curriculum for people with lived experience who want to support others with hope, scope clarity, and real-world skills.",
   contactHours: 40,
-  priceCents: 89500,
+  priceCents: 120000,
   competencies: [
-    "recovery-principles",
-    "communication",
-    "ethics-boundaries",
-    "trauma-informed-care",
-    "crisis-safety",
-    "cultural-humility",
-    "motivational-interviewing",
-    "documentation",
-    "systems-navigation",
-    "self-care",
+    "Recovery-oriented peer support",
+    "Communication and motivational interviewing",
+    "Ethics, boundaries, confidentiality, and documentation",
+    "Trauma-informed, culturally responsive, and crisis-aware practice",
+    "Resource navigation, self-care, and applied peer conversation skills",
   ],
   learningOutcomes: [
-    "Demonstrate peer role clarity and recovery-oriented practice within Oregon THW scope",
-    "Use active listening, empowerment, and MI-aligned communication",
-    "Apply ethics, boundaries, confidentiality, and trauma-informed principles",
-    "Recognize crisis indicators and follow safety/escalation protocols",
-    "Navigate basic community resources and document support respectfully",
-    "Complete AI practice portfolio and pass human competency evaluation",
+    "Explain peer support in plain language and stay within Oregon peer scope.",
+    "Use lived experience strategically while centering the peer's choice.",
+    "Respond to crisis concerns by recognizing, relating, and routing through proper supports.",
+    "Write factual peer notes and protect confidentiality.",
+    "Complete section MCQs and module AI reviews for instructor review.",
   ],
-  modules: CORE_PSS_MODULES.map((mod) => ({
-    ...mod,
-    lessons: mod.lessons ?? flattenModuleLessons(mod),
-  })),
+  modules: CORE_PSS_MODULES,
 };

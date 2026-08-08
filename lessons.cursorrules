@@ -18,3 +18,4 @@
 14. Tuition unlocks enrollment — do not auto-enroll on sign-up alone (except admin grants / scholarships).
 15. **Curriculum CMS:** preserve chapter-aware modules (`Module -> Chapter -> Lesson`) while keeping flat lessons working for legacy seeds; staff editors should keep Cascade forest/copper/yellow neo-brutalist styling, not purple or cream/terracotta.
 16. **Curriculum CMS is chaptered now:** author/edit content as Course -> Module -> Chapter -> Lesson. Keep `module.lessons` as a derived flat compatibility field via `flattenModuleLessons()` until admin/learn/database flows fully use chapters.
+17. **Hybrid curriculum model:** PSS/PWS lessons should follow Module -> section chapters -> personable reading -> section MCQ -> module AI review; AI review is practice evidence only, and human instructors still certify.

@@ -75,3 +75,8 @@ Curriculum content now lives in `src/lib/curriculum/` as typed seed data:
 - `courses.ts` re-exports `./index` for backward-compatible imports.
 
 Admin CMS work should treat `Course -> Module -> Chapter -> Lesson` as the canonical editing model. Keep `lessons` as a derived flat compatibility field until the database/UI fully supports chapters.
+
+## Hybrid curriculum assessment model
+
+PSS/PWS curriculum now uses `Module -> Section chapter -> personable teaching -> section MCQ -> module AI review`.
+Each section ends with a 4-question `QUIZ` (`isModuleQuiz: false`, 80% pass score). Each module's final lesson is `MODULE_AI_REVIEW` with `isModuleAiReview: true` and a structured `moduleAiReview` payload. The AI review is practice evidence for instructors; human instructor/admin review still controls completion and certification decisions.
